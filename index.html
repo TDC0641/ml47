@@ -214,7 +214,7 @@
   const mapWrap = qs('#mapWrap');
   fetch('map.svg').then(r=>r.text()).then(svgText=>{
     mapWrap.innerHTML = svgText;
-    const svg = qs('#mapWrap svg') || mapWrap.querySelector('svg');
+    const svg = mapWrap.querySelector('svg') || mapWrap.firstElementChild;
     if (!svg) { qs('#loading').textContent='map.svgの読み込みに失敗'; return; }
     svg.style.background='#fff';
     svg.querySelectorAll('text,tspan,[id^="text"],[id^="tspan"]').forEach(el=>el.remove());
