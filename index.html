@@ -217,6 +217,7 @@
     const svg = qs('#mapWrap svg') || mapWrap.querySelector('svg');
     if (!svg) { qs('#loading').textContent='map.svgの読み込みに失敗'; return; }
     svg.style.background='#fff';
+    svg.querySelectorAll('text,tspan,[id^="text"],[id^="tspan"]').forEach(el=>el.remove());
     // クリック可能エリアを広げる（g要素があればグループ単位で）
     const groups = svg.querySelectorAll('g');
     if (groups.length) {
