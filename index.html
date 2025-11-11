@@ -215,6 +215,9 @@
   fetch('map.svg').then(r=>r.text()).then(svgText=>{
     mapWrap.innerHTML = svgText.replace(/<(?:[^>]*:)?(?:text|tspan)[^>]*>[\s\S]*?<\/(?:[^>]*:)?(?:text|tspan)>/gi,'');
     const svg = mapWrap.querySelector('svg') || mapWrap.firstElementChild;
+    const hide = document.createElementNS('http://www.w3.org/2000/svg','style');
+    hide.textContent = 'text,tspan{display:none!important}';
+    svg.insertBefore(hide, svg.firstChild);
     if (!svg) { qs('#loading').textContent='map.svgの読み込みに失敗'; return; }
     svg.style.background='#fff';
     svg.querySelectorAll('text,tspan,[id^="text"],[id^="tspan"]').forEach(el=>el.remove());
