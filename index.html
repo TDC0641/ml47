@@ -56,6 +56,7 @@
           node.querySelector('title')?.textContent?.trim() ||
           '（名称不明）';
         alert(`県: ${pref} にログ追加`);
+        (g||el).querySelectorAll('path,polygon,rect,circle,ellipse').forEach(p=>p.setAttribute('fill','#2ecc71'));
         node.classList.add('logged');
       }, { passive:true });
     });
