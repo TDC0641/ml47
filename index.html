@@ -10,41 +10,44 @@
   #mapWrap{ min-height:70vh; display:flex; align-items:center; justify-content:center; padding:12px; border:1px solid var(--border); margin:12px; border-radius:12px; background:#fff; }
   svg{ width:100%; height:auto; display:block; background:#fff; }
   .hoverable{ cursor:pointer; }
-  /* 緑化（gに付けても内側まで効くように） */
   .logged path, .logged polygon, .logged rect, .logged circle, .logged ellipse{
     fill:var(--green) !important; fill-opacity:.7 !important;
   }
 </style>
 </head>
 <body>
-  <div id="mapWrap"><div id="loading">地図を読み込み中…</div></div>
+  <div id="mapWrap">地図を読み込み中…</div>
 
 <script>
 (async () => {
   const wrap = document.getElementById('mapWrap');
   try {
-    // Cache回避パラメータ付きで読み込み（同階層の map.svg）
-    const res = await fetch(`map.svg?v=${Date.now()}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error(res.status+' '+res.statusText);
+    const res = await fetch('./map.svg?v=' + Date.now(), { cache:'no-store' });
+    if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
 
-    // text/tspanは除去してから挿入
-    const raw = await res.text();
-    const cleaned = raw.replace(/<(?:[^>]*:)?(?:text|tspan)\b[^>]*>[\s\S]*?<\/(?:[^>]*:)?(?:text|tspan)>/gi,'');
-    wrap.innerHTML = cleaned;
+    const svgText = await res.text();
 
-    const svg = wrap.querySelector('svg');              // ← ここを wrap に
-    if (!svg) throw new Error('SVG not found');
+    // SVGとして厳密にパース
+    const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
 
-    // 念のため、残ったtext/tspanをCSSで非表示
-    const sty = document.createElementNS('http://www.w3.org/2000/svg','style');
-    sty.textContent = 'text,tspan{display:none!important}';
-    svg.insertBefore(sty, svg.firstChild);
+    // text/tspan を安全に除去（prefix付きも localName で判定）
+    Array.from(doc.getElementsByTagName('*')).forEach(n=>{
+      if (n.localName === 'text' || n.localName === 'tspan') n.remove();
+    });
+
+    let svg = doc.querySelector('svg');
+    if (!svg) throw new Error('SVG root not found');
+
+    // このドキュメントに取り込んでから挿入
+    svg = document.importNode(svg, true);
+    wrap.innerHTML = '';
+    wrap.appendChild(svg);
 
     // 県クリック（alert＋緑化）
     svg.querySelectorAll('path,polygon,polyline,rect,circle,ellipse').forEach(el=>{
-      el.style.pointerEvents='all';
+      el.style.pointerEvents = 'all';
       el.classList.add('hoverable');
-      el.addEventListener('click', (ev)=>{
+      el.addEventListener('click',(ev)=>{
         ev.stopPropagation();
         const node = el.closest('g') ?? el;
         const pref =
@@ -57,7 +60,6 @@
       }, { passive:true });
     });
   } catch (e) {
-    // 失敗時は枠内にメッセージを必ず出す
     wrap.textContent = 'map.svgの読み込みに失敗: ' + e.message;
   }
 })();
