@@ -1,0 +1,39 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JP Map Run mini</title>
+<style>
+  body{font-family:system-ui,sans-serif;margin:12px}
+  #wrap{max-width:900px;margin:0 auto}
+  object{width:100%;height:auto;display:block;background:#fff;border:1px solid #ddd}
+  .has-log *{fill:#2ecc71 !important}
+</style>
+<div id="wrap">
+  <object id="jpmap" data="map.svg?v=20251111-obj" type="image/svg+xml"></object>
+</div>
+<script>
+document.getElementById('jpmap').addEventListener('load', () => {
+  const svg = document.getElementById('jpmap').contentDocument?.documentElement;
+  if (!svg) { alert('SVG not loaded'); return; }
+
+  // テキストは非表示（あれば）
+  const style = svg.ownerDocument.createElementNS('http://www.w3.org/2000/svg','style');
+  style.textContent = 'text,tspan{display:none!important}';
+  svg.insertBefore(style, svg.firstChild);
+
+  // 県クリック（形状を含むgを対象）
+  Array.from(svg.querySelectorAll('g')).forEach(g => {
+    if (!g.querySelector('path,polygon,polyline,rect,circle,ellipse')) return;
+    g.style.cursor = 'pointer';
+    g.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const name =
+        g.getAttribute('data-pref') ||
+        g.id?.replace(/^pref-/,'') ||
+        g.querySelector('title')?.textContent?.trim() || '（名称不明）';
+      alert(`県: ${name} にログ追加`);
+      g.classList.add('has-log');
+    }, { passive:true });
+  });
+});
+</script>
