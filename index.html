@@ -10,8 +10,14 @@
   #mapWrap{ min-height:70vh; display:flex; align-items:center; justify-content:center; padding:12px; border:1px solid var(--border); margin:12px; border-radius:12px; background:#fff; }
   svg{ width:100%; height:auto; display:block; background:#fff; }
   .hoverable{ cursor:pointer; }
-  .logged path, .logged polygon, .logged rect, .logged circle, .logged ellipse{
-    fill:var(--green) !important; fill-opacity:.7 !important;
+
+  /* クリック後のハイライト（要素自身にも効くように .logged 単体も指定） */
+  .logged,
+  .logged path, .logged polygon, .logged rect, .logged circle, .logged ellipse, .logged use{
+    fill:#2ecc71 !important;
+    stroke:#2ecc71 !important;
+    fill-opacity:.7 !important;
+    stroke-width:2 !important;
   }
 </style>
 </head>
@@ -42,20 +48,21 @@
     svg = document.importNode(svg, true);
     wrap.innerHTML = '';
     wrap.appendChild(svg);
-    
-    // SVG内で最優先の強制スタイル（内部styleより後ろに置く）
+
+    // SVG内の末尾に最優先のスタイルも埋め込む（内部<style>より後ろ）
     if (!svg.querySelector('#ml47-style')) {
       const s = document.createElementNS('http://www.w3.org/2000/svg','style');
       s.id = 'ml47-style';
-      s.textContent = `
-        .logged path, .logged polygon, .logged rect, .logged circle, .logged ellipse, .logged use {
-          fill:#2ecc71 !important; stroke:#2ecc71 !important; fill-opacity:.7 !important;
-        }`;
+      s.textContent =
+        '.logged, .logged path, .logged polygon, .logged rect, .logged circle, .logged ellipse, .logged use{' +
+        'fill:#2ecc71 !important; stroke:#2ecc71 !important; fill-opacity:.7 !important; stroke-width:2 !important;}';
       svg.appendChild(s);
     }
 
+    const drawables = 'path,polygon,polyline,rect,circle,ellipse,use';
+
     // 県クリック（alert＋緑化）
-    svg.querySelectorAll('path,polygon,polyline,rect,circle,ellipse').forEach(el=>{
+    svg.querySelectorAll(drawables).forEach(el=>{
       el.style.pointerEvents = 'all';
       el.classList.add('hoverable');
       el.addEventListener('click',(ev)=>{
@@ -67,11 +74,23 @@
           node.querySelector('title')?.textContent?.trim() ||
           '（名称不明）';
         alert(`県: ${pref} にログ追加`);
+
+        // クラス付与
         node.classList.add('logged');
-        node.querySelectorAll('path,polygon,rect,circle,ellipse,use').forEach(p=>{
+
+        // 自身が図形なら直接スタイル
+        if (node.matches?.(drawables)) {
+          node.style.setProperty('fill','#2ecc71','important');
+          node.style.setProperty('stroke','#2ecc71','important');
+          node.style.setProperty('fill-opacity','.7','important');
+          node.style.setProperty('stroke-width','2','important');
+        }
+        // 子要素にも適用
+        node.querySelectorAll(drawables).forEach(p=>{
           p.style.setProperty('fill','#2ecc71','important');
           p.style.setProperty('stroke','#2ecc71','important');
           p.style.setProperty('fill-opacity','.7','important');
+          p.style.setProperty('stroke-width','2','important');
         });
       }, { passive:true });
     });
