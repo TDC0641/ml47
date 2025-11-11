@@ -15,7 +15,11 @@
   <div id="mapWrap">地図を読み込み中…</div>
 
 <script>
-(async () => {
+
+  window.addEventListener('error', e => { document.getElementById('mapWrap').textContent = 'JSエラー: ' + e.message; });
+  window.addEventListener('unhandledrejection', e => { document.getElementById('mapWrap').textContent = 'Promiseエラー: ' + (e.reason?.message || e.reason); });
+  
+  (async () => {
   const wrap = document.getElementById('mapWrap');
   const NS   = 'http://www.w3.org/2000/svg';
   const TAGS = new Set(['path','polygon','polyline','rect','circle','ellipse','use']);
