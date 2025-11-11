@@ -67,8 +67,12 @@
           node.querySelector('title')?.textContent?.trim() ||
           '（名称不明）';
         alert(`県: ${pref} にログ追加`);
-        (node||el).querySelectorAll('path,polygon,rect,circle,ellipse').forEach(p=>p.setAttribute('fill','#2ecc71'));
         node.classList.add('logged');
+        node.querySelectorAll('path,polygon,rect,circle,ellipse,use').forEach(p=>{
+          p.style.setProperty('fill','#2ecc71','important');
+          p.style.setProperty('stroke','#2ecc71','important');
+          p.style.setProperty('fill-opacity','.7','important');
+        });
       }, { passive:true });
     });
   } catch (e) {
