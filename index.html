@@ -27,7 +27,7 @@
       // テキスト要素は除去してから挿入
       const raw = await res.text();
       wrap.innerHTML = raw.replace(/<(?:[^>]*:)?(?:text|tspan)[^>]*>[\s\S]*?<\/(?:[^>]*:)?(?:text|tspan)>/gi,'');
-      const svg = wrap.querySelector('svg');
+      const svg = mapWrap.querySelector('svg');
       if (!svg) throw new Error('SVG not found');
 
       // 念のための非表示スタイル
