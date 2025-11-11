@@ -215,6 +215,19 @@
   fetch('map.svg').then(r=>r.text()).then(svgText=>{
     mapWrap.innerHTML = svgText.replace(/<(?:[^>]*:)?(?:text|tspan)[^>]*>[\s\S]*?<\/(?:[^>]*:)?(?:text|tspan)>/gi,'');
     const svg = mapWrap.querySelector('svg') || mapWrap.firstElementChild;
+    // 県タップを有効化（塗り無しでも当たり判定）
+    svg.querySelectorAll('path,polygon,polyline,rect,circle,ellipse').forEach(el=>{
+      el.style.pointerEvents = 'all';
+      el.addEventListener('click',(e)=>{
+        e.stopPropagation();
+        const g = el.closest('g');
+        const pref = g?.getAttribute('data-pref')
+          || g?.querySelector('title')?.textContent?.trim()
+          || el.id || '（名称不明）';
+        alert(`県: ${pref} にログ追加`);
+        (g||el).classList.add('has-log');
+      }, {passive:true});
+    });
     const hide = document.createElementNS('http://www.w3.org/2000/svg','style');
     hide.textContent = 'text,tspan{display:none!important}';
     svg.insertBefore(hide, svg.firstChild);
