@@ -213,7 +213,7 @@
   // Map: load local map.svg
   const mapWrap = qs('#mapWrap');
   fetch('map.svg').then(r=>r.text()).then(svgText=>{
-    mapWrap.innerHTML = svgText;
+    mapWrap.innerHTML = svgText.replace(/<(?:[^>]*:)?(?:text|tspan)[^>]*>[\s\S]*?<\/(?:[^>]*:)?(?:text|tspan)>/gi,'');
     const svg = mapWrap.querySelector('svg') || mapWrap.firstElementChild;
     if (!svg) { qs('#loading').textContent='map.svgの読み込みに失敗'; return; }
     svg.style.background='#fff';
