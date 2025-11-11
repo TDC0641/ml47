@@ -42,6 +42,17 @@
     svg = document.importNode(svg, true);
     wrap.innerHTML = '';
     wrap.appendChild(svg);
+    
+    // SVG内で最優先の強制スタイル（内部styleより後ろに置く）
+    if (!svg.querySelector('#ml47-style')) {
+      const s = document.createElementNS('http://www.w3.org/2000/svg','style');
+      s.id = 'ml47-style';
+      s.textContent = `
+        .logged path, .logged polygon, .logged rect, .logged circle, .logged ellipse, .logged use {
+          fill:#2ecc71 !important; stroke:#2ecc71 !important; fill-opacity:.7 !important;
+        }`;
+      svg.appendChild(s);
+    }
 
     // 県クリック（alert＋緑化）
     svg.querySelectorAll('path,polygon,polyline,rect,circle,ellipse').forEach(el=>{
