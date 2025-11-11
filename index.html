@@ -3,11 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>ML47 テスト（最小）</title>
+<title>ML47 テスト（緑表示・簡易版）</title>
 <style>
-  :root{ --green:#2ecc71; --border:#e5e7eb; }
   html,body{ margin:0; background:#fff; font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif; }
-  #mapWrap{ min-height:70vh; display:flex; align-items:center; justify-content:center; padding:12px; border:1px solid var(--border); margin:12px; border-radius:12px; background:#fff; }
+  #mapWrap{ min-height:70vh; display:flex; align-items:center; justify-content:center; padding:12px; margin:12px; background:#fff; }
   svg{ width:100%; height:auto; display:block; background:#fff; }
   .hoverable{ cursor:pointer; }
 </style>
@@ -18,13 +17,16 @@
 <script>
 (async () => {
   const wrap = document.getElementById('mapWrap');
+  const NS   = 'http://www.w3.org/2000/svg';
+  const TAGS = new Set(['path','polygon','polyline','rect','circle','ellipse','use']);
+
   try {
-    // 同階層の map.svg を取得（キャッシュ回避）
+    // map.svgを取得（キャッシュ回避）
     const res = await fetch('./map.svg?v=' + Date.now(), { cache:'no-store' });
     if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
     const svgText = await res.text();
 
-    // SVGとして厳密にパースし、text/tspanを除去
+    // 厳密にパースし、text/tspanは除去
     const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
     doc.querySelectorAll('text,tspan').forEach(n=>n.remove());
 
@@ -34,50 +36,101 @@
     wrap.innerHTML = '';
     wrap.appendChild(svg);
 
-    // ハイライト用レイヤー（最上面、クリックは素通し）
-    let hi = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    hi.setAttribute('id','ml47-highlight');
+    // ハイライト最上面レイヤー
+    const hi = document.createElementNS(NS,'g');
+    hi.id = 'ml47-highlight';
     hi.style.pointerEvents = 'none';
     svg.appendChild(hi);
 
-    // クリック対象のタグ（namespace差異は localName で吸収）
-    const TAGS = new Set(['path','polygon','polyline','rect','circle','ellipse','use']);
-    const drawables = Array.from(svg.querySelectorAll('*')).filter(el=>TAGS.has(el.localName));
+    // <use>参照を解決し、x/y/transformを継承
+    function resolveUse(el){
+      let base = el;
+      let t = el.getAttribute('transform') || '';
+      const x = el.getAttribute('x'), y = el.getAttribute('y');
+      if ((x && x !== '0') || (y && y !== '0')) t += ` translate(${+x||0},${+y||0})`;
+      if (el.localName === 'use') {
+        const href = el.getAttribute('href') || el.getAttribute('xlink:href');
+        if (href && href.startsWith('#')) {
+          const ref = svg.querySelector(href);
+          if (ref) base = ref;
+        }
+      }
+      return { base, transform: t.trim() };
+    }
 
-    // 県クリック：alert + ハイライトクローンを重ねる
+    // gなら内側の図形、単体図形ならそれ自身を返す
+    function collectShapes(node){
+      if (TAGS.has(node.localName)) return [node];
+      const arr = Array.from(node.querySelectorAll('*')).filter(n=>TAGS.has(n.localName));
+      return arr.length ? arr : [];
+    }
+
+    // クリック対象を収集
+    const drawables = Array.from(svg.querySelectorAll('*')).filter(el=>TAGS.has(el.localName));
     drawables.forEach(el=>{
       el.style.pointerEvents = 'all';
       el.classList.add('hoverable');
-      el.addEventListener('click', (ev)=>{
+
+      el.addEventListener('click',(ev)=>{
         ev.stopPropagation();
         const node = el.closest('g') ?? el;
-        const pref =
-          node.getAttribute('data-pref') ||
-          node.id?.replace(/^pref-/,'') ||
-          node.querySelector('title')?.textContent?.trim() ||
-          '（名称不明）';
+
+        // まずはポップアップ（県名は簡易：title→id）
+        const pref = node.querySelector('title')?.textContent?.trim()
+                  || node.id || '（名称不明）';
         alert(`県: ${pref} にログ追加`);
 
-        // 既存ハイライトをクリア
+        // 既存ハイライトを消去
         while (hi.firstChild) hi.removeChild(hi.firstChild);
 
-        // クローン対象を収集（gなら内部の描画要素、単体ならそれ自身）
-        const targets = TAGS.has(node.localName)
-          ? [node]
-          : Array.from(node.querySelectorAll('*')).filter(n=>TAGS.has(n.localName));
+        // <use>やtransformを反映したラッパー
+        const { base, transform } = resolveUse(node);
+        const wrapG = document.createElementNS(NS,'g');
+        wrapG.style.pointerEvents = 'none';
+        if (transform) wrapG.setAttribute('transform', transform);
 
-        // 可視化：半透明の塗り＋太い枠線（stroke-onlyの地図でも見える）
-        targets.forEach(src=>{
-          const copy = src.cloneNode(true);
-          copy.removeAttribute('clip-path');
-          copy.style.pointerEvents = 'none';
-          copy.setAttribute('fill','#2ecc71');
-          copy.setAttribute('fill-opacity','0.35');
-          copy.setAttribute('stroke','#2ecc71');
-          copy.setAttribute('stroke-width','4');       // 線主体でもハッキリ見える
-          hi.appendChild(copy);
-        });
-      }, {passive:true});
+        // クローンを最上面に重ねて“確実に”緑表示
+        const shapes = collectShapes(base);
+        if (shapes.length) {
+          shapes.forEach(src=>{
+            // 個々の<use>も解決して表示
+            let b = src, extraT = '';
+            if (b.localName === 'use') {
+              const r = resolveUse(b);
+              b = r.base; extraT = r.transform;
+            }
+            const holder = document.createElementNS(NS,'g');
+            if (extraT) holder.setAttribute('transform', extraT);
+
+            const copy = b.cloneNode(true);
+            copy.removeAttribute('clip-path');
+            copy.removeAttribute('mask');
+            copy.removeAttribute('filter');
+            copy.style.pointerEvents = 'none';
+            copy.setAttribute('fill','#2ecc71');
+            copy.setAttribute('fill-opacity','0.35');
+            copy.setAttribute('stroke','#2ecc71');
+            copy.setAttribute('stroke-width','4');
+            holder.appendChild(copy);
+            wrapG.appendChild(holder);
+          });
+          hi.appendChild(wrapG);
+        } else {
+          // フォールバック：BBox矩形で可視化
+          try {
+            const bb = (node.getBBox ? node.getBBox() : base.getBBox());
+            const rect = document.createElementNS(NS,'rect');
+            rect.setAttribute('x', bb.x); rect.setAttribute('y', bb.y);
+            rect.setAttribute('width', bb.width); rect.setAttribute('height', bb.height);
+            rect.setAttribute('fill', '#2ecc71');
+            rect.setAttribute('fill-opacity', '0.35');
+            rect.setAttribute('stroke', '#2ecc71');
+            rect.setAttribute('stroke-width', '4');
+            if (transform) rect.setAttribute('transform', transform);
+            hi.appendChild(rect);
+          } catch(_) {}
+        }
+      }, { passive:true });
     });
   } catch (e) {
     wrap.textContent = 'map.svgの読み込みに失敗: ' + e.message;
