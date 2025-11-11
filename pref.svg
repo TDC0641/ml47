@@ -1,0 +1,244 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="100%" height="100%" role="img" aria-label="日本の都道府県（グリッド）">
+  <defs>
+    <style>
+      .pref-rect { fill:#f4f4f5; stroke:#9ca3af; stroke-width:1.5; }
+      .code { font-family: system-ui, -apple-system, "Noto Sans JP", Meiryo, sans-serif; font-size:16px; fill:#374151; pointer-events:none; user-select:none; }
+    </style>
+  </defs>
+  <rect x="0" y="0" width="1200" height="900" fill="#ffffff" />
+  <g class="prefecture" data-code="01">
+    <title>北海道</title>
+    <rect class="pref-rect" x="8.0" y="8.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="66.5" y="81.0" text-anchor="middle">北海道</text>
+  </g>
+  <g class="prefecture" data-code="02">
+    <title>青森県</title>
+    <rect class="pref-rect" x="141.0" y="8.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="199.5" y="81.0" text-anchor="middle">青森県</text>
+  </g>
+  <g class="prefecture" data-code="03">
+    <title>岩手県</title>
+    <rect class="pref-rect" x="274.0" y="8.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="332.5" y="81.0" text-anchor="middle">岩手県</text>
+  </g>
+  <g class="prefecture" data-code="04">
+    <title>宮城県</title>
+    <rect class="pref-rect" x="407.0" y="8.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="465.5" y="81.0" text-anchor="middle">宮城県</text>
+  </g>
+  <g class="prefecture" data-code="05">
+    <title>秋田県</title>
+    <rect class="pref-rect" x="540.0" y="8.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="598.5" y="81.0" text-anchor="middle">秋田県</text>
+  </g>
+  <g class="prefecture" data-code="06">
+    <title>山形県</title>
+    <rect class="pref-rect" x="673.0" y="8.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="731.5" y="81.0" text-anchor="middle">山形県</text>
+  </g>
+  <g class="prefecture" data-code="07">
+    <title>福島県</title>
+    <rect class="pref-rect" x="806.0" y="8.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="864.5" y="81.0" text-anchor="middle">福島県</text>
+  </g>
+  <g class="prefecture" data-code="08">
+    <title>茨城県</title>
+    <rect class="pref-rect" x="939.0" y="8.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="997.5" y="81.0" text-anchor="middle">茨城県</text>
+  </g>
+  <g class="prefecture" data-code="09">
+    <title>栃木県</title>
+    <rect class="pref-rect" x="1072.0" y="8.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="1130.5" y="81.0" text-anchor="middle">栃木県</text>
+  </g>
+  <g class="prefecture" data-code="10">
+    <title>群馬県</title>
+    <rect class="pref-rect" x="8.0" y="158.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="66.5" y="231.0" text-anchor="middle">群馬県</text>
+  </g>
+  <g class="prefecture" data-code="11">
+    <title>埼玉県</title>
+    <rect class="pref-rect" x="141.0" y="158.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="199.5" y="231.0" text-anchor="middle">埼玉県</text>
+  </g>
+  <g class="prefecture" data-code="12">
+    <title>千葉県</title>
+    <rect class="pref-rect" x="274.0" y="158.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="332.5" y="231.0" text-anchor="middle">千葉県</text>
+  </g>
+  <g class="prefecture" data-code="13">
+    <title>東京都</title>
+    <rect class="pref-rect" x="407.0" y="158.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="465.5" y="231.0" text-anchor="middle">東京都</text>
+  </g>
+  <g class="prefecture" data-code="14">
+    <title>神奈川県</title>
+    <rect class="pref-rect" x="540.0" y="158.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="598.5" y="231.0" text-anchor="middle">神奈川県</text>
+  </g>
+  <g class="prefecture" data-code="15">
+    <title>新潟県</title>
+    <rect class="pref-rect" x="673.0" y="158.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="731.5" y="231.0" text-anchor="middle">新潟県</text>
+  </g>
+  <g class="prefecture" data-code="16">
+    <title>富山県</title>
+    <rect class="pref-rect" x="806.0" y="158.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="864.5" y="231.0" text-anchor="middle">富山県</text>
+  </g>
+  <g class="prefecture" data-code="17">
+    <title>石川県</title>
+    <rect class="pref-rect" x="939.0" y="158.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="997.5" y="231.0" text-anchor="middle">石川県</text>
+  </g>
+  <g class="prefecture" data-code="18">
+    <title>福井県</title>
+    <rect class="pref-rect" x="1072.0" y="158.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="1130.5" y="231.0" text-anchor="middle">福井県</text>
+  </g>
+  <g class="prefecture" data-code="19">
+    <title>山梨県</title>
+    <rect class="pref-rect" x="8.0" y="308.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="66.5" y="381.0" text-anchor="middle">山梨県</text>
+  </g>
+  <g class="prefecture" data-code="20">
+    <title>長野県</title>
+    <rect class="pref-rect" x="141.0" y="308.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="199.5" y="381.0" text-anchor="middle">長野県</text>
+  </g>
+  <g class="prefecture" data-code="21">
+    <title>岐阜県</title>
+    <rect class="pref-rect" x="274.0" y="308.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="332.5" y="381.0" text-anchor="middle">岐阜県</text>
+  </g>
+  <g class="prefecture" data-code="22">
+    <title>静岡県</title>
+    <rect class="pref-rect" x="407.0" y="308.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="465.5" y="381.0" text-anchor="middle">静岡県</text>
+  </g>
+  <g class="prefecture" data-code="23">
+    <title>愛知県</title>
+    <rect class="pref-rect" x="540.0" y="308.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="598.5" y="381.0" text-anchor="middle">愛知県</text>
+  </g>
+  <g class="prefecture" data-code="24">
+    <title>三重県</title>
+    <rect class="pref-rect" x="673.0" y="308.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="731.5" y="381.0" text-anchor="middle">三重県</text>
+  </g>
+  <g class="prefecture" data-code="25">
+    <title>滋賀県</title>
+    <rect class="pref-rect" x="806.0" y="308.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="864.5" y="381.0" text-anchor="middle">滋賀県</text>
+  </g>
+  <g class="prefecture" data-code="26">
+    <title>京都府</title>
+    <rect class="pref-rect" x="939.0" y="308.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="997.5" y="381.0" text-anchor="middle">京都府</text>
+  </g>
+  <g class="prefecture" data-code="27">
+    <title>大阪府</title>
+    <rect class="pref-rect" x="1072.0" y="308.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="1130.5" y="381.0" text-anchor="middle">大阪府</text>
+  </g>
+  <g class="prefecture" data-code="28">
+    <title>兵庫県</title>
+    <rect class="pref-rect" x="8.0" y="458.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="66.5" y="531.0" text-anchor="middle">兵庫県</text>
+  </g>
+  <g class="prefecture" data-code="29">
+    <title>奈良県</title>
+    <rect class="pref-rect" x="141.0" y="458.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="199.5" y="531.0" text-anchor="middle">奈良県</text>
+  </g>
+  <g class="prefecture" data-code="30">
+    <title>和歌山県</title>
+    <rect class="pref-rect" x="274.0" y="458.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="332.5" y="531.0" text-anchor="middle">和歌山県</text>
+  </g>
+  <g class="prefecture" data-code="31">
+    <title>鳥取県</title>
+    <rect class="pref-rect" x="407.0" y="458.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="465.5" y="531.0" text-anchor="middle">鳥取県</text>
+  </g>
+  <g class="prefecture" data-code="32">
+    <title>島根県</title>
+    <rect class="pref-rect" x="540.0" y="458.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="598.5" y="531.0" text-anchor="middle">島根県</text>
+  </g>
+  <g class="prefecture" data-code="33">
+    <title>岡山県</title>
+    <rect class="pref-rect" x="673.0" y="458.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="731.5" y="531.0" text-anchor="middle">岡山県</text>
+  </g>
+  <g class="prefecture" data-code="34">
+    <title>広島県</title>
+    <rect class="pref-rect" x="806.0" y="458.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="864.5" y="531.0" text-anchor="middle">広島県</text>
+  </g>
+  <g class="prefecture" data-code="35">
+    <title>山口県</title>
+    <rect class="pref-rect" x="939.0" y="458.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="997.5" y="531.0" text-anchor="middle">山口県</text>
+  </g>
+  <g class="prefecture" data-code="36">
+    <title>徳島県</title>
+    <rect class="pref-rect" x="1072.0" y="458.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="1130.5" y="531.0" text-anchor="middle">徳島県</text>
+  </g>
+  <g class="prefecture" data-code="37">
+    <title>香川県</title>
+    <rect class="pref-rect" x="8.0" y="608.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="66.5" y="681.0" text-anchor="middle">香川県</text>
+  </g>
+  <g class="prefecture" data-code="38">
+    <title>愛媛県</title>
+    <rect class="pref-rect" x="141.0" y="608.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="199.5" y="681.0" text-anchor="middle">愛媛県</text>
+  </g>
+  <g class="prefecture" data-code="39">
+    <title>高知県</title>
+    <rect class="pref-rect" x="274.0" y="608.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="332.5" y="681.0" text-anchor="middle">高知県</text>
+  </g>
+  <g class="prefecture" data-code="40">
+    <title>福岡県</title>
+    <rect class="pref-rect" x="407.0" y="608.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="465.5" y="681.0" text-anchor="middle">福岡県</text>
+  </g>
+  <g class="prefecture" data-code="41">
+    <title>佐賀県</title>
+    <rect class="pref-rect" x="540.0" y="608.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="598.5" y="681.0" text-anchor="middle">佐賀県</text>
+  </g>
+  <g class="prefecture" data-code="42">
+    <title>長崎県</title>
+    <rect class="pref-rect" x="673.0" y="608.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="731.5" y="681.0" text-anchor="middle">長崎県</text>
+  </g>
+  <g class="prefecture" data-code="43">
+    <title>熊本県</title>
+    <rect class="pref-rect" x="806.0" y="608.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="864.5" y="681.0" text-anchor="middle">熊本県</text>
+  </g>
+  <g class="prefecture" data-code="44">
+    <title>大分県</title>
+    <rect class="pref-rect" x="939.0" y="608.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="997.5" y="681.0" text-anchor="middle">大分県</text>
+  </g>
+  <g class="prefecture" data-code="45">
+    <title>宮崎県</title>
+    <rect class="pref-rect" x="1072.0" y="608.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="1130.5" y="681.0" text-anchor="middle">宮崎県</text>
+  </g>
+  <g class="prefecture" data-code="46">
+    <title>鹿児島県</title>
+    <rect class="pref-rect" x="8.0" y="758.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="66.5" y="831.0" text-anchor="middle">鹿児島県</text>
+  </g>
+  <g class="prefecture" data-code="47">
+    <title>沖縄県</title>
+    <rect class="pref-rect" x="141.0" y="758.0" width="117.0" height="134.0" rx="10" ry="10"/>
+    <text class="code" x="199.5" y="831.0" text-anchor="middle">沖縄県</text>
+  </g>
+</svg>
