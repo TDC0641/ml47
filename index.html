@@ -37,7 +37,7 @@
   .sort-btn{ cursor:pointer; color:#111; }
   .muted{ color:#6b7280; }
   .toast{ position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:#111; color:#fff; padding:10px 14px; border-radius:10px; display:none; z-index:60; }
-  .addbar{ display:grid; grid-template-columns: 100px 130px 160px 1fr 130px 100px; gap:8px; align-items:center; margin:8px 0 12px; }
+  .addbar{ display:grid; grid-template-columns: 100px 130px 130px 1fr 160px 100px; gap:8px; align-items:center; margin:8px 0 12px; }
   .addbar button{ height:42px; }
   /* 追加：区切り線（追加の塊と表示の塊を分ける） */
   .section-sep{ border-top:1px solid var(--border); margin:8px 0 12px; }
@@ -69,7 +69,6 @@
   <section id="tab-logs" class="tab-content" role="tabpanel" aria-labelledby="ログ">
     <!-- 追加フォーム（追加の塊） -->
     <div class="addbar" id="addbar">
-      <select id="addPref"></select>
       <select id="addDist">
         <option value="フル">フル</option>
         <option value="ハーフ">ハーフ</option>
@@ -79,13 +78,13 @@
         <option value="5K">5K</option>
         <option value="その他">その他</option>
       </select>
-      <input id="addDate" type="date"/>
-      <input id="addRace" type="text" placeholder="マラソン大会名"/>
+      <select id="addPref"></select>
       <input id="addTime" type="text" placeholder="例：4:29:00"/>
+      <input id="addRace" type="text" placeholder="マラソン大会名"/>
+      <input id="addDate" type="date"/>
       <button class="primary" id="addBtn">追加</button>
     </div>
-
-    <!-- ① ここに区切り線を追加 -->
+<!-- ① ここに区切り線を追加 -->
     <div class="section-sep" role="separator" aria-label="区切り線"></div>
 
     <!-- 表示用ツールバー（表示の塊） -->
@@ -115,12 +114,11 @@
       <table id="logTable">
         <thead>
           <tr>
-            <th><span class="sort-btn" data-key="pref">県 ▼</span></th>
-            <!-- ② 距離を表示列として追加（ソート可） -->
             <th><span class="sort-btn" data-key="dist">距離 ▼</span></th>
-            <th><span class="sort-btn" data-key="date">日付 ▼</span></th>
-            <th><span class="sort-btn" data-key="race">大会名 ▼</span></th>
+            <th><span class="sort-btn" data-key="pref">県 ▼</span></th>
             <th><span class="sort-btn" data-key="time">タイム ▼</span></th>
+            <th><span class="sort-btn" data-key="race">大会名 ▼</span></th>
+            <th><span class="sort-btn" data-key="date">日付 ▼</span></th>
             <th>削除</th>
           </tr>
         </thead>
@@ -136,36 +134,36 @@
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <header id="modalTitle">大会ログを追加</header>
     <div class="body">
-      <div class="row">
-        <label for="prefSelect">県</label>
-        <select id="prefSelect"></select>
-      </div>
-      <div class="row">
-        <label for="dateInput">日付</label>
-        <input id="dateInput" type="date" />
-        <small class="muted">※ ログには yy/m/d 形式で保存・表示します</small>
-      </div>
-      <div class="row">
-        <label for="raceInput">大会名</label>
-        <input id="raceInput" type="text" placeholder="例：盛岡シティマラソン" />
-      </div>
-      <div class="row">
-        <label for="distSelect">距離</label>
-        <select id="distSelect">
-          <option value="フル">フル</option>
-          <option value="ハーフ">ハーフ</option>
-          <option value="30K">30K</option>
-          <option value="20K">20K</option>
-          <option value="10K">10K</option>
-          <option value="5K">5K</option>
-          <option value="その他">その他</option>
-        </select>
-      </div>
-      <div class="row">
-        <label for="timeInput">タイム</label>
-        <input id="timeInput" type="text" placeholder="例：4:29:00" />
-      </div>
-    </div>
+
+
+
+
+
+<div class="row">
+<label for="distSelect">距離</label>
+<select id="distSelect">
+<option value="フル">フル</option>
+<option value="ハーフ">ハーフ</option>
+<option value="30K">30K</option>
+<option value="20K">20K</option>
+<option value="10K">10K</option>
+<option value="5K">5K</option>
+<option value="その他">その他</option>
+</select>
+</div><div class="row">
+<label for="prefSelect">県</label>
+<select id="prefSelect"></select>
+</div><div class="row">
+<label for="timeInput">タイム</label>
+<input id="timeInput" placeholder="例：4:29:00" type="text"/>
+</div><div class="row">
+<label for="raceInput">大会名</label>
+<input id="raceInput" placeholder="例：盛岡シティマラソン" type="text"/>
+</div><div class="row">
+<label for="dateInput">日付</label>
+<input id="dateInput" type="date"/>
+<small class="muted">※ ログには yy/m/d 形式で保存・表示します</small>
+</div></div>
     <footer>
       <button class="secondary" id="cancelBtn">閉じる</button>
       <div style="flex:1"></div>
@@ -329,11 +327,11 @@
     });
 
     tbody.innerHTML = items.map((r,i)=>`<tr data-index="${i}">
+      <td>${r.dist||''}</td>
       <td>${r.pref||''}</td>
-      <td>${r.dist||''}</td> <!-- 距離列を追加 -->
-      <td>${fmtYYMD(r.dateISO)}</td>
-      <td>${r.race||''}</td>
       <td>${r.time||''}</td>
+      <td>${r.race||''}</td>
+      <td>${fmtYYMD(r.dateISO)}</td>
       <td><button class="secondary" data-action="del">削除</button></td>
     </tr>`).join('');
   }
