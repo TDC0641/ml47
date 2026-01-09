@@ -1,9 +1,18 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>ML47（マラソンログ47）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>マラログ47（ML47）</title>
+
+<!-- PWA / iOS 追加分 -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ML47">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+
 <style>
   :root { --green:#2ecc71; --border:#e5e7eb; --muted:#6b7280; }
   html,body{ background:#fff; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans JP", Meiryo; }
@@ -30,6 +39,7 @@
   button.primary{ background:#111; color:#fff; border:none; padding:10px 14px; border-radius:8px; font-weight:600; }
   button.secondary{ background:#f3f4f6; color:#111; border:none; padding:10px 14px; border-radius:8px; font-weight:600; }
   .toolbar{ display:flex; align-items:center; gap:8px; margin:8px 0 12px; flex-wrap:wrap; }
+  .divider{ width:1px; height:28px; background:var(--border); }
   .spacer{ flex:1 }
   table{ width:100%; border-collapse:collapse; border:1px solid var(--border); border-radius:12px; overflow:hidden; }
   thead th{ background:#f9fafb; text-align:left; padding:10px; font-size:.95rem; border-bottom:1px solid var(--border); white-space:nowrap; }
@@ -39,15 +49,11 @@
   .toast{ position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:#111; color:#fff; padding:10px 14px; border-radius:10px; display:none; z-index:60; }
   .addbar{ display:grid; grid-template-columns: 100px 130px 160px 1fr 130px 100px; gap:8px; align-items:center; margin:8px 0 12px; }
   .addbar button{ height:42px; }
-  /* 追加：区切り線（追加の塊と表示の塊を分ける） */
-  .section-sep{ border-top:1px solid var(--border); margin:8px 0 12px; }
   @media (max-width: 700px){
     .addbar{ grid-template-columns: 1fr 1fr; }
     .addbar .full{ grid-column: 1 / -1; }
   }
 </style>
-<link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#111111">
 </head>
 <body>
 <div class="container">
@@ -69,9 +75,7 @@
   </section>
 
   <section id="tab-logs" class="tab-content" role="tabpanel" aria-labelledby="ログ">
-    <!-- 追加フォーム（追加の塊） -->
     <div class="addbar" id="addbar">
-      <select id="addPref"></select>
       <select id="addDist">
         <option value="フル">フル</option>
         <option value="ハーフ">ハーフ</option>
@@ -81,16 +85,13 @@
         <option value="5K">5K</option>
         <option value="その他">その他</option>
       </select>
+      <select id="addPref"></select>
       <input id="addDate" type="date"/>
       <input id="addRace" type="text" placeholder="マラソン大会名"/>
       <input id="addTime" type="text" placeholder="例：4:29:00"/>
       <button class="primary" id="addBtn">追加</button>
     </div>
 
-    <!-- ① ここに区切り線を追加 -->
-    <div class="section-sep" role="separator" aria-label="区切り線"></div>
-
-    <!-- 表示用ツールバー（表示の塊） -->
     <div class="toolbar">
       <label for="distanceFilter">距離:</label>
       <select id="distanceFilter">
@@ -103,6 +104,8 @@
         <option value="5K">5K</option>
         <option value="その他">その他</option>
       </select>
+
+      <div class="divider"></div>
 
       <label for="prefFilter">県:</label>
       <select id="prefFilter">
@@ -118,9 +121,8 @@
         <thead>
           <tr>
             <th><span class="sort-btn" data-key="pref">県 ▼</span></th>
-            <!-- ② 距離を表示列として追加（ソート可） -->
-            <th><span class="sort-btn" data-key="dist">距離 ▼</span></th>
             <th><span class="sort-btn" data-key="date">日付 ▼</span></th>
+            <th><span class="sort-btn" data-key="dist">距離 ▼</span></th>
             <th><span class="sort-btn" data-key="race">大会名 ▼</span></th>
             <th><span class="sort-btn" data-key="time">タイム ▼</span></th>
             <th>削除</th>
@@ -242,14 +244,17 @@
       });
     });
     paintLogged(svg);
-  }).catch(e=>{ qs('#loading').textContent='地図の読み込みに失敗: '+e.message; });
+  }).catch(e=>{ const m=qs('#loading'); if(m) m.textContent='地図の読み込みに失敗: '+e.message; });
 
   // Modal (map click)
   const mask=qs('#modalMask'), toast=qs('#toast');
   const prefSel=qs('#prefSelect'), dateInput=qs('#dateInput'), raceInput=qs('#raceInput'), distSel=qs('#distSelect'), timeInput=qs('#timeInput');
   const cancelBtn=qs('#cancelBtn'), saveBtn=qs('#saveBtn'), saveAndNewBtn=qs('#saveAndNewBtn');
   function showToast(msg='保存しました'){ toast.textContent=msg; toast.style.display='block'; setTimeout(()=>toast.style.display='none',1200); }
-  function buildPrefOptions(selected, selEl=prefSel){ selEl.innerHTML=PREFS.map(p=>`<option value="${p}">${p}</option>`).join(''); selEl.value=selected||'東京都'; }
+  function buildPrefOptions(selected, selEl=prefSel){
+    selEl.innerHTML=PREFS.map(p=>`<option value="${p}">${p}</option>`).join('');
+    selEl.value=selected||'東京都';
+  }
   function openModal(prefName){ buildPrefOptions(prefName, prefSel); dateInput.value=todayISO(); raceInput.value=''; distSel.value='フル'; timeInput.value=''; mask.style.display='flex'; mask.setAttribute('aria-hidden','false'); }
   function closeModal(){ mask.style.display='none'; mask.setAttribute('aria-hidden','true'); }
   cancelBtn.addEventListener('click', closeModal);
@@ -291,11 +296,8 @@
     qsa('.logged', svg).forEach(el=>el.classList.remove('logged'));
     const used=new Set(logs.map(l=>l.pref));
     qsa('g.prefecture', svg).forEach(g=>{
-      const id=g.getAttribute('id')||'';
-      const name=id.replace(/^pref-/,'');
-      if(used.has(name)){
-        qsa('path,polygon,polyline,rect,circle,ellipse', g).forEach(el=>el.classList.add('logged'));
-      }
+      const id=g.getAttribute('id')||''; const name=id.replace(/^pref-/,'');
+      if(used.has(name)){ qsa('path,polygon,polyline,rect,circle,ellipse', g).forEach(el=>el.classList.add('logged')); }
     });
   }
 
@@ -303,43 +305,44 @@
   const distanceFilter=qs('#distanceFilter');
   const prefFilter=qs('#prefFilter');
 
-  function buildPrefFilterOptions(){
-    prefFilter.innerHTML = '<option value="ALL">全て</option>' + PREFS.map(p=>`<option value="${p}">${p}</option>`).join('');
-  }
+  // 県フィルタの選択肢
+  prefFilter.innerHTML = ['<option value="ALL">全て</option>', ...PREFS.map(p=>`<option value="${p}">${p}</option>`)].join('');
 
   let sortKey='date', sortAsc=false;
-
-  function refreshTable(){
+  function currentView(){
     const distVal=distanceFilter.value;
     const prefVal=prefFilter.value;
-
     let items=logs.slice();
     if(distVal!=='ALL') items=items.filter(r=>r.dist===distVal);
     if(prefVal!=='ALL') items=items.filter(r=>r.pref===prefVal);
-
-    items.sort((a,b)=>{
-      const dir=sortAsc?1:-1;
+    return items;
+  }
+  function sortItems(items){
+    const dir=sortAsc?1:-1;
+    return items.sort((a,b)=>{
       const aD=a.dateISO||'0000-00-00', bD=b.dateISO||'0000-00-00';
       switch(sortKey){
         case 'pref': return (a.pref||'').localeCompare(b.pref||'','ja')*dir;
-        case 'dist': return (a.dist||'').localeCompare(b.dist||'','ja')*dir;  // 追加
         case 'date': return aD.localeCompare(bD)*dir;
         case 'race': return (a.race||'').localeCompare(b.race||'','ja')*dir;
         case 'time': return (a.time||'').localeCompare(b.time||'')*dir;
+        case 'dist': return (a.dist||'').localeCompare(b.dist||'','ja')*dir;
         default: return 0;
       }
     });
-
-    tbody.innerHTML = items.map((r,i)=>`<tr data-index="${i}">
-      <td>${r.pref||''}</td>
-      <td>${r.dist||''}</td> <!-- 距離列を追加 -->
-      <td>${fmtYYMD(r.dateISO)}</td>
-      <td>${r.race||''}</td>
-      <td>${r.time||''}</td>
-      <td><button class="secondary" data-action="del">削除</button></td>
-    </tr>`).join('');
   }
-
+  function refreshTable(){
+    const items = sortItems(currentView());
+    tbody.innerHTML = items.map((r,i)=>`
+      <tr data-index="${i}">
+        <td>${r.pref||''}</td>
+        <td>${fmtYYMD(r.dateISO)}</td>
+        <td>${r.dist||''}</td>
+        <td>${r.race||''}</td>
+        <td>${r.time||''}</td>
+        <td><button class="secondary" data-action="del">削除</button></td>
+      </tr>`).join('');
+  }
   qsa('.sort-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const key=btn.dataset.key;
@@ -347,61 +350,26 @@
       refreshTable();
     });
   });
-
   distanceFilter.addEventListener('change', refreshTable);
   prefFilter.addEventListener('change', refreshTable);
 
-  // 削除（現在のフィルタ＆並び順に整合）
   tbody.addEventListener('click', (e)=>{
     const btn=e.target.closest('button[data-action="del"]'); if(!btn) return;
-    const tr=e.target.closest('tr');
-    const rowIndex=Array.from(tbody.children).indexOf(tr);
-
-    const distVal=distanceFilter.value;
-    const prefVal=prefFilter.value;
-    let view=logs.slice();
-    if(distVal!=='ALL') view=view.filter(r=>r.dist===distVal);
-    if(prefVal!=='ALL') view=view.filter(r=>r.pref===prefVal);
-    view.sort((a,b)=>{
-      const dir=sortAsc?1:-1;
-      const aD=a.dateISO||'0000-00-00', bD=b.dateISO||'0000-00-00';
-      switch(sortKey){
-        case 'pref': return (a.pref||'').localeCompare(b.pref||'','ja')*dir;
-        case 'dist': return (a.dist||'').localeCompare(b.dist||'','ja')*dir;
-        case 'date': return aD.localeCompare(bD)*dir;
-        case 'race': return (a.race||'').localeCompare(b.race||'','ja')*dir;
-        case 'time': return (a.time||'').localeCompare(b.time||'')*dir;
-        default: return 0;
-      }
-    });
-
-    const record=view[rowIndex]; if(!record) return;
+    // 表示中のビューから該当レコードを逆引きして削除
+    const tr=e.target.closest('tr'); const idx=Array.from(tbody.children).indexOf(tr);
+    const items = sortItems(currentView());
+    const record=items[idx]; if(!record) return;
     const i=logs.findIndex(x=>JSON.stringify(x)===JSON.stringify(record));
-    if(i>=0){
-      logs.splice(i,1);
-      saveJSON(LS_KEY, logs);
-      refreshTable();
-      paintLogged(qs('#mapWrap svg'));
-    }
+    if(i>=0){ logs.splice(i,1); saveJSON(LS_KEY, logs); refreshTable(); paintLogged(qs('#mapWrap svg')); }
   });
 
-  // 初期化
-  buildPrefOptions('東京都', qs('#addPref'));
-  buildPrefFilterOptions();
-  prefFilter.value='ALL';
-  distanceFilter.value='ALL';
-  qs('#addDate').value = todayISO();
-  refreshTable();
+  distanceFilter.value='ALL'; refreshTable();
+
+  // SW 登録
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>{ navigator.serviceWorker.register('./service-worker.js'); });
+  }
 })();
 </script>
 </body>
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js?ml47v=1', { scope: './' })
-      .then(reg => console.log('SW registered:', reg.scope))
-      .catch(err => console.warn('SW registration failed:', err));
-  });
-}
-</script>
 </html>
