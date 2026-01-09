@@ -6,286 +6,156 @@
 <title>ML47（マラソンログ47）</title>
 
 <style>
-:root{
-  --green:#2ecc71;
-  --border:#e5e7eb;
-  --muted:#6b7280;
-}
+  :root { --green:#2ecc71; --border:#e5e7eb; --muted:#6b7280; }
+  html,body{ background:#fff; margin:0; font-family: system-ui, -apple-system, "Noto Sans JP", sans-serif; }
 
-html,body{
-  margin:0;
-  background:#fff;
-  font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;
-}
+  .header{ padding:10px 12px 0; font-weight:800; font-size:1.25rem; }
+  .tabs{ display:flex; border-bottom:1px solid var(--border); position:sticky; top:0; background:#fff; z-index:5 }
+  .tab-btn{ flex:1; padding:12px 8px; cursor:pointer; font-weight:600; text-align:center; border:none; background:#fff; }
+  .tab-btn.active{ border-bottom:3px solid #111; }
 
-/* ===== Header / Tabs ===== */
-.container{ max-width:1100px; margin:0 auto; }
-.header{
-  padding:10px 12px 0;
-  font-weight:800;
-  font-size:1.25rem;
-  display:flex;
-  gap:10px;
-}
-.tabs{
-  display:flex;
-  border-bottom:1px solid var(--border);
-  position:sticky;
-  top:0;
-  background:#fff;
-  z-index:5;
-}
-.tab-btn{
-  flex:1;
-  padding:12px 8px;
-  font-weight:600;
-  border:none;
-  background:#fff;
-}
-.tab-btn.active{
-  border-bottom:3px solid #111;
-}
-.tab-content{ display:none; padding:12px; }
-.tab-content.active{ display:block; }
+  .tab-content{ display:none; padding:12px; }
+  .tab-content.active{ display:block; }
 
-/* ===== Map ===== */
-#mapWrap{
-  background:#fff;
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:8px;
-  min-height:60vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-svg{ max-width:100%; height:auto; }
-.hoverable{ cursor:pointer; }
-.logged{ fill:var(--green)!important; fill-opacity:.7!important; }
+  #mapWrap{ background:#fff; border:1px solid var(--border); border-radius:12px; padding:8px; min-height:60vh;
+            display:flex; align-items:center; justify-content:center; }
+  svg{ width:100%; height:auto; display:block; }
 
-/* ===== Add bar ===== */
-.addbar{
-  display:grid;
-  grid-template-columns: 100px 130px 160px 1fr 130px 100px;
-  gap:8px;
-  align-items:center;
-  margin:8px 0 12px;
-}
-.addbar button{ height:42px; }
+  .hoverable{ cursor:pointer; }
+  .logged{ fill:var(--green)!important; fill-opacity:.7!important; }
 
-/* 区切り線 */
-.divider{
-  border-top:1px solid var(--border);
-  margin:12px 0;
-}
+  .addbar{ display:grid; grid-template-columns:120px 120px 1fr 120px; gap:8px; margin:8px 0; }
+  .addbar button{ font-weight:600; }
 
-/* ===== Toolbar ===== */
-.toolbar{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  margin-bottom:8px;
-  flex-wrap:wrap;
-}
-.spacer{ flex:1 }
+  .toolbar{ display:flex; align-items:center; gap:8px; margin:12px 0; }
+  .spacer{ flex:1 }
 
-/* ===== Table ===== */
-.table-wrap{ overflow-x:auto; }
-table{
-  width:100%;
-  border-collapse:collapse;
-  border:1px solid var(--border);
-  border-radius:12px;
-}
-thead th{
-  background:#f9fafb;
-  padding:10px;
-  font-size:.95rem;
-  white-space:nowrap;
-}
-tbody td{
-  padding:10px;
-  border-top:1px solid var(--border);
-  font-size:.95rem;
-}
-button.secondary{
-  background:#f3f4f6;
-  border:none;
-  border-radius:8px;
-  padding:8px 10px;
-}
+  table{ width:100%; border-collapse:collapse; border:1px solid var(--border); }
+  th,td{ padding:8px; border-top:1px solid var(--border); font-size:.9rem; }
+  th{ background:#f9fafb; }
 
-/* ===== スマホ最適化（案A） ===== */
-@media (max-width:700px){
-  thead th, tbody td{
-    padding:6px 6px;
-    font-size:12px;
-    line-height:1.2;
-    white-space:nowrap;
-  }
-
-  #logTable th:nth-child(1), #logTable td:nth-child(1){ width:6.5em; } /* 県 */
-  #logTable th:nth-child(2), #logTable td:nth-child(2){ width:5.5em; } /* 日付 */
-  #logTable th:nth-child(3), #logTable td:nth-child(3){
-    max-width:10em;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  } /* 大会名 */
-  #logTable th:nth-child(4), #logTable td:nth-child(4){ width:4.5em; } /* 距離 */
-  #logTable th:nth-child(5), #logTable td:nth-child(5){ width:6em; }   /* タイム */
-  #logTable th:nth-child(6), #logTable td:nth-child(6){ width:4em; }   /* 削除 */
-
-  button.secondary{
-    padding:6px 8px;
-    font-size:12px;
-  }
-}
+  .muted{ color:var(--muted); }
 </style>
 </head>
 
 <body>
-<div class="container">
+<div class="header">ML47（マラソンログ47）</div>
 
-  <div class="header">ML47（マラソンログ47）</div>
-
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="map">地図</button>
-    <button class="tab-btn" data-tab="logs">ログ</button>
-  </div>
-
-  <!-- ===== Map tab ===== -->
-  <section id="tab-map" class="tab-content active">
-    <div id="mapWrap">地図を読み込み中…</div>
-    <p class="muted">県をクリックしてログを追加。ログのある県は緑になります。</p>
-  </section>
-
-  <!-- ===== Logs tab ===== -->
-  <section id="tab-logs" class="tab-content">
-
-    <!-- 追加 -->
-    <div class="addbar">
-      <select id="addDist">
-        <option>フル</option><option>ハーフ</option><option>30K</option>
-        <option>20K</option><option>10K</option><option>5K</option>
-      </select>
-      <select id="addPref"></select>
-      <input type="date" id="addDate">
-      <input type="text" id="addRace" placeholder="大会名">
-      <input type="text" id="addTime" placeholder="4:29:00">
-      <button class="primary" id="addBtn">追加</button>
-    </div>
-
-    <!-- 区切り線 -->
-    <div class="divider"></div>
-
-    <!-- フィルタ -->
-    <div class="toolbar">
-      <label>距離:</label>
-      <select id="distanceFilter">
-        <option value="ALL">全て</option>
-        <option>フル</option><option>ハーフ</option><option>30K</option>
-        <option>20K</option><option>10K</option><option>5K</option>
-      </select>
-
-      <label>県:</label>
-      <select id="prefFilter">
-        <option value="ALL">全て</option>
-      </select>
-
-      <div class="spacer"></div>
-      <span class="muted">※ 最新が上</span>
-    </div>
-
-    <!-- 表 -->
-    <div class="table-wrap">
-      <table id="logTable">
-        <thead>
-          <tr>
-            <th>県</th>
-            <th>日付</th>
-            <th>大会名</th>
-            <th>距離</th>
-            <th>タイム</th>
-            <th>削除</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-
-  </section>
+<div class="tabs">
+  <button class="tab-btn active" data-tab="map">地図</button>
+  <button class="tab-btn" data-tab="logs">ログ</button>
 </div>
 
-<script>
-/* ===== 既存ロジック（省略せず最小構成） ===== */
-const PREFS=["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県","新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"];
-const LS_KEY="ml47.logs";
-let logs=JSON.parse(localStorage.getItem(LS_KEY)||"[]");
+<section id="tab-map" class="tab-content active">
+  <div id="mapWrap">地図を読み込み中…</div>
+  <p class="muted">県をタップしてログを追加できます</p>
+</section>
 
-const qs=s=>document.querySelector(s);
-const qsa=s=>Array.from(document.querySelectorAll(s));
+<section id="tab-logs" class="tab-content">
+  <div class="addbar">
+    <select id="addDist">
+      <option>フル</option><option>ハーフ</option><option>30K</option>
+      <option>20K</option><option>10K</option><option>5K</option>
+    </select>
+    <select id="addPref"></select>
+    <input id="addRace" placeholder="大会名">
+    <button id="addBtn">追加</button>
+  </div>
 
-/* Tabs */
-qsa('.tab-btn').forEach(b=>{
-  b.onclick=()=>{
-    qsa('.tab-btn').forEach(x=>x.classList.remove('active'));
-    qsa('.tab-content').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');
-    qs('#tab-'+b.dataset.tab).classList.add('active');
-    if(b.dataset.tab==='logs') refresh();
-  };
-});
+  <div class="toolbar">
+    <label>距離:</label>
+    <select id="distanceFilter">
+      <option value="ALL">全て</option>
+      <option>フル</option><option>ハーフ</option>
+      <option>30K</option><option>20K</option>
+      <option>10K</option><option>5K</option>
+    </select>
+    <div class="spacer"></div>
+  </div>
 
-/* Build selects */
-const addPref=qs('#addPref'), prefFilter=qs('#prefFilter');
-addPref.innerHTML=PREFS.map(p=>`<option>${p}</option>`).join('');
-prefFilter.innerHTML='<option value="ALL">全て</option>'+PREFS.map(p=>`<option>${p}</option>`).join('');
-
-qs('#addDate').value=new Date().toISOString().slice(0,10);
-
-/* Add */
-qs('#addBtn').onclick=()=>{
-  const rec={
-    pref:addPref.value,
-    date:qs('#addDate').value,
-    race:qs('#addRace').value,
-    dist:qs('#addDist').value,
-    time:qs('#addTime').value
-  };
-  if(!rec.race||!rec.time){ alert("大会名とタイム必須"); return; }
-  logs.push(rec);
-  localStorage.setItem(LS_KEY,JSON.stringify(logs));
-  qs('#addRace').value=''; qs('#addTime').value='';
-  refresh();
-};
-
-/* Render */
-function refresh(){
-  const d=qs('#distanceFilter').value;
-  const p=prefFilter.value;
-  let items=[...logs].reverse();
-  if(d!=="ALL") items=items.filter(x=>x.dist===d);
-  if(p!=="ALL") items=items.filter(x=>x.pref===p);
-
-  qs('#logTable tbody').innerHTML=
-    items.map((r,i)=>`
+  <table>
+    <thead>
       <tr>
-        <td>${r.pref}</td>
-        <td>${r.date.slice(2)}</td>
-        <td>${r.race}</td>
-        <td>${r.dist}</td>
-        <td>${r.time}</td>
-        <td><button class="secondary" onclick="del(${logs.length-1-i})">×</button></td>
-      </tr>`).join('');
-}
-window.del=i=>{
-  logs.splice(i,1);
-  localStorage.setItem(LS_KEY,JSON.stringify(logs));
-  refresh();
-};
+        <th>県</th>
+        <th>日付</th>
+        <th>距離</th>
+        <th>大会</th>
+      </tr>
+    </thead>
+    <tbody id="logBody"></tbody>
+  </table>
+</section>
 
-qs('#distanceFilter').onchange=refresh;
-prefFilter.onchange=refresh;
+<script>
+(() => {
+  const PREFS=["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県",
+               "埼玉県","千葉県","東京都","神奈川県","新潟県","富山県","石川県","福井県","山梨県","長野県",
+               "岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県",
+               "鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県",
+               "福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"];
+
+  const LS_KEY="ml47.logs";
+  const logs=JSON.parse(localStorage.getItem(LS_KEY)||"[]");
+
+  const addPref=document.getElementById("addPref");
+  addPref.innerHTML=PREFS.map(p=>`<option>${p}</option>`).join("");
+
+  function save(){ localStorage.setItem(LS_KEY,JSON.stringify(logs)); }
+
+  document.getElementById("addBtn").onclick=()=>{
+    logs.push({
+      pref:addPref.value,
+      dist:document.getElementById("addDist").value,
+      race:document.getElementById("addRace").value,
+      date:new Date().toISOString().slice(0,10)
+    });
+    save(); renderTable(); paintMap();
+  };
+
+  function renderTable(){
+    const f=document.getElementById("distanceFilter").value;
+    const body=document.getElementById("logBody");
+    body.innerHTML="";
+    logs.filter(l=>f==="ALL"||l.dist===f).forEach(l=>{
+      body.insertAdjacentHTML("beforeend",
+        `<tr><td>${l.pref}</td><td>${l.date}</td><td>${l.dist}</td><td>${l.race}</td></tr>`);
+    });
+  }
+
+  document.getElementById("distanceFilter").onchange=renderTable;
+
+  // tabs
+  document.querySelectorAll(".tab-btn").forEach(b=>{
+    b.onclick=()=>{
+      document.querySelectorAll(".tab-btn").forEach(x=>x.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(x=>x.classList.remove("active"));
+      b.classList.add("active");
+      document.getElementById("tab-"+b.dataset.tab).classList.add("active");
+      if(b.dataset.tab==="logs") renderTable();
+    };
+  });
+
+  // map
+  fetch("https://raw.githubusercontent.com/geolonia/japanese-prefectures/master/map-full.svg")
+    .then(r=>r.text()).then(t=>{
+      document.getElementById("mapWrap").innerHTML=t;
+      paintMap();
+      document.querySelectorAll("g.prefecture").forEach(g=>{
+        const name=g.querySelector("title")?.textContent;
+        g.onclick=()=>alert(name);
+      });
+    });
+
+  function paintMap(){
+    const used=new Set(logs.map(l=>l.pref));
+    document.querySelectorAll("g.prefecture").forEach(g=>{
+      const name=g.querySelector("title")?.textContent;
+      g.classList.toggle("logged", used.has(name));
+    });
+  }
+
+  renderTable();
+})();
 </script>
 </body>
 </html>
