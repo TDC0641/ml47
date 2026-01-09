@@ -4,157 +4,392 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>ML47（マラソンログ47）</title>
-
 <style>
   :root { --green:#2ecc71; --border:#e5e7eb; --muted:#6b7280; }
-  html,body{ background:#fff; margin:0; font-family: system-ui, -apple-system, "Noto Sans JP", sans-serif; }
-
-  .header{ padding:10px 12px 0; font-weight:800; font-size:1.25rem; }
+  html,body{ background:#fff; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans JP", Meiryo; }
+  .header{ padding:10px 12px 0; font-weight:800; font-size:1.25rem; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   .tabs{ display:flex; border-bottom:1px solid var(--border); position:sticky; top:0; background:#fff; z-index:5 }
   .tab-btn{ flex:1; padding:12px 8px; cursor:pointer; font-weight:600; text-align:center; border:none; background:#fff; }
-  .tab-btn.active{ border-bottom:3px solid #111; }
-
+  .tab-btn.active{ color:#111; border-bottom:3px solid #111; }
   .tab-content{ display:none; padding:12px; }
   .tab-content.active{ display:block; }
-
-  #mapWrap{ background:#fff; border:1px solid var(--border); border-radius:12px; padding:8px; min-height:60vh;
-            display:flex; align-items:center; justify-content:center; }
-  svg{ width:100%; height:auto; display:block; }
-
-  .hoverable{ cursor:pointer; }
-  .logged{ fill:var(--green)!important; fill-opacity:.7!important; }
-
-  .addbar{ display:grid; grid-template-columns:120px 120px 1fr 120px; gap:8px; margin:8px 0; }
-  .addbar button{ font-weight:600; }
-
-  .toolbar{ display:flex; align-items:center; gap:8px; margin:12px 0; }
+  .container{ max-width:1100px; margin:0 auto; }
+  #mapWrap{ background:#fff; border:1px solid var(--border); border-radius:12px; padding:8px; overflow:auto; min-height:60vh; display:flex; align-items:center; justify-content:center; }
+  svg{ max-width:100%; height:auto; display:block; background:#fff; }
+  .hoverable{ cursor:pointer; transition: filter .15s ease; }
+  .hoverable:hover{ filter: brightness(0.9); }
+  .logged{ fill: var(--green) !important; fill-opacity: .7 !important; }
+  .modal-mask{ position:fixed; inset:0; background:rgba(0,0,0,.4); display:none; align-items:center; justify-content:center; padding:16px; z-index:50; }
+  .modal{ width:min(560px,100%); background:#fff; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.25); }
+  .modal header{ padding:14px 16px; border-bottom:1px solid var(--border); font-weight:700; }
+  .modal .body{ padding:14px 16px; display:grid; gap:10px; }
+  .modal .row{ display:grid; gap:6px; }
+  label{ font-size:.9rem; color:#111; }
+  input,select{ padding:10px; border:1px solid var(--border); border-radius:8px; font-size:1rem; background:#fff; }
+  .modal footer{ display:flex; gap:10px; justify-content:flex-end; padding:12px 16px; border-top:1px solid var(--border); flex-wrap:wrap; }
+  button.primary{ background:#111; color:#fff; border:none; padding:10px 14px; border-radius:8px; font-weight:600; }
+  button.secondary{ background:#f3f4f6; color:#111; border:none; padding:10px 14px; border-radius:8px; font-weight:600; }
+  .toolbar{ display:flex; align-items:center; gap:8px; margin:8px 0 12px; flex-wrap:wrap; }
   .spacer{ flex:1 }
-
-  table{ width:100%; border-collapse:collapse; border:1px solid var(--border); }
-  th,td{ padding:8px; border-top:1px solid var(--border); font-size:.9rem; }
-  th{ background:#f9fafb; }
-
-  .muted{ color:var(--muted); }
+  table{ width:100%; border-collapse:collapse; border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  thead th{ background:#f9fafb; text-align:left; padding:10px; font-size:.95rem; border-bottom:1px solid var(--border); white-space:nowrap; }
+  tbody td{ padding:10px; border-top:1px solid var(--border); font-size:.95rem; }
+  .sort-btn{ cursor:pointer; color:#111; }
+  .muted{ color:#6b7280; }
+  .toast{ position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:#111; color:#fff; padding:10px 14px; border-radius:10px; display:none; z-index:60; }
+  .addbar{ display:grid; grid-template-columns: 100px 130px 160px 1fr 130px 100px; gap:8px; align-items:center; margin:8px 0 12px; }
+  .addbar button{ height:42px; }
+  /* 追加：区切り線（追加の塊と表示の塊を分ける） */
+  .section-sep{ border-top:1px solid var(--border); margin:8px 0 12px; }
+  @media (max-width: 700px){
+    .addbar{ grid-template-columns: 1fr 1fr; }
+    .addbar .full{ grid-column: 1 / -1; }
+  }
 </style>
 </head>
-
 <body>
-<div class="header">ML47（マラソンログ47）</div>
-
-<div class="tabs">
-  <button class="tab-btn active" data-tab="map">地図</button>
-  <button class="tab-btn" data-tab="logs">ログ</button>
-</div>
-
-<section id="tab-map" class="tab-content active">
-  <div id="mapWrap">地図を読み込み中…</div>
-  <p class="muted">県をタップしてログを追加できます</p>
-</section>
-
-<section id="tab-logs" class="tab-content">
-  <div class="addbar">
-    <select id="addDist">
-      <option>フル</option><option>ハーフ</option><option>30K</option>
-      <option>20K</option><option>10K</option><option>5K</option>
-    </select>
-    <select id="addPref"></select>
-    <input id="addRace" placeholder="大会名">
-    <button id="addBtn">追加</button>
-  </div>
-
-  <div class="toolbar">
-    <label>距離:</label>
-    <select id="distanceFilter">
-      <option value="ALL">全て</option>
-      <option>フル</option><option>ハーフ</option>
-      <option>30K</option><option>20K</option>
-      <option>10K</option><option>5K</option>
-    </select>
+<div class="container">
+  <div class="header">
+    <div>ML47（マラソンログ47）</div>
     <div class="spacer"></div>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>県</th>
-        <th>日付</th>
-        <th>距離</th>
-        <th>大会</th>
-      </tr>
-    </thead>
-    <tbody id="logBody"></tbody>
-  </table>
-</section>
+  <div class="tabs" role="tablist">
+    <button class="tab-btn active" data-tab="map" aria-selected="true">地図</button>
+    <button class="tab-btn" data-tab="logs" aria-selected="false">ログ</button>
+  </div>
+
+  <section id="tab-map" class="tab-content active" role="tabpanel" aria-labelledby="地図">
+    <div id="mapWrap">
+      <div id="loading">地図を読み込み中…（ネット接続が必要です）</div>
+    </div>
+    <p class="muted">県をクリックしてログを追加。ログのある県は緑になります。</p>
+  </section>
+
+  <section id="tab-logs" class="tab-content" role="tabpanel" aria-labelledby="ログ">
+    <!-- 追加フォーム（追加の塊） -->
+    <div class="addbar" id="addbar">
+      <select id="addPref"></select>
+      <select id="addDist">
+        <option value="フル">フル</option>
+        <option value="ハーフ">ハーフ</option>
+        <option value="30K">30K</option>
+        <option value="20K">20K</option>
+        <option value="10K">10K</option>
+        <option value="5K">5K</option>
+        <option value="その他">その他</option>
+      </select>
+      <input id="addDate" type="date"/>
+      <input id="addRace" type="text" placeholder="マラソン大会名"/>
+      <input id="addTime" type="text" placeholder="例：4:29:00"/>
+      <button class="primary" id="addBtn">追加</button>
+    </div>
+
+    <!-- ① ここに区切り線を追加 -->
+    <div class="section-sep" role="separator" aria-label="区切り線"></div>
+
+    <!-- 表示用ツールバー（表示の塊） -->
+    <div class="toolbar">
+      <label for="distanceFilter">距離:</label>
+      <select id="distanceFilter">
+        <option value="ALL">全て</option>
+        <option value="フル">フル</option>
+        <option value="ハーフ">ハーフ</option>
+        <option value="30K">30K</option>
+        <option value="20K">20K</option>
+        <option value="10K">10K</option>
+        <option value="5K">5K</option>
+        <option value="その他">その他</option>
+      </select>
+
+      <label for="prefFilter">県:</label>
+      <select id="prefFilter">
+        <option value="ALL">全て</option>
+      </select>
+
+      <div class="spacer"></div>
+      <span class="muted">※ 初期表示は「全て」＋最新が上。ヘッダーの▼で切替。</span>
+    </div>
+
+    <div class="table-wrap">
+      <table id="logTable">
+        <thead>
+          <tr>
+            <th><span class="sort-btn" data-key="pref">県 ▼</span></th>
+            <!-- ② 距離を表示列として追加（ソート可） -->
+            <th><span class="sort-btn" data-key="dist">距離 ▼</span></th>
+            <th><span class="sort-btn" data-key="date">日付 ▼</span></th>
+            <th><span class="sort-btn" data-key="race">大会名 ▼</span></th>
+            <th><span class="sort-btn" data-key="time">タイム ▼</span></th>
+            <th>削除</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast">保存しました（続けて追加できます）</div>
+
+<div class="modal-mask" id="modalMask" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <header id="modalTitle">大会ログを追加</header>
+    <div class="body">
+      <div class="row">
+        <label for="prefSelect">県</label>
+        <select id="prefSelect"></select>
+      </div>
+      <div class="row">
+        <label for="dateInput">日付</label>
+        <input id="dateInput" type="date" />
+        <small class="muted">※ ログには yy/m/d 形式で保存・表示します</small>
+      </div>
+      <div class="row">
+        <label for="raceInput">大会名</label>
+        <input id="raceInput" type="text" placeholder="例：盛岡シティマラソン" />
+      </div>
+      <div class="row">
+        <label for="distSelect">距離</label>
+        <select id="distSelect">
+          <option value="フル">フル</option>
+          <option value="ハーフ">ハーフ</option>
+          <option value="30K">30K</option>
+          <option value="20K">20K</option>
+          <option value="10K">10K</option>
+          <option value="5K">5K</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+      <div class="row">
+        <label for="timeInput">タイム</label>
+        <input id="timeInput" type="text" placeholder="例：4:29:00" />
+      </div>
+    </div>
+    <footer>
+      <button class="secondary" id="cancelBtn">閉じる</button>
+      <div style="flex:1"></div>
+      <button class="secondary" id="saveAndNewBtn">保存して続けて追加</button>
+      <button class="primary" id="saveBtn">保存</button>
+    </footer>
+  </div>
+</div>
 
 <script>
-(() => {
-  const PREFS=["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県",
-               "埼玉県","千葉県","東京都","神奈川県","新潟県","富山県","石川県","福井県","山梨県","長野県",
-               "岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県",
-               "鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県",
-               "福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"];
+(function(){
+  'use strict';
+  const LS_KEY = 'ml47.logs';
+  const OLD_KEYS = ['runmapjp5.logs'];
+  const PREFS = ["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県","新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"];
+  const JP_BY_CODE = {"01":"北海道","02":"青森県","03":"岩手県","04":"宮城県","05":"秋田県","06":"山形県","07":"福島県","08":"茨城県","09":"栃木県","10":"群馬県","11":"埼玉県","12":"千葉県","13":"東京都","14":"神奈川県","15":"新潟県","16":"富山県","17":"石川県","18":"福井県","19":"山梨県","20":"長野県","21":"岐阜県","22":"静岡県","23":"愛知県","24":"三重県","25":"滋賀県","26":"京都府","27":"大阪府","28":"兵庫県","29":"奈良県","30":"和歌山県","31":"鳥取県","32":"島根県","33":"岡山県","34":"広島県","35":"山口県","36":"徳島県","37":"香川県","38":"愛媛県","39":"高知県","40":"福岡県","41":"佐賀県","42":"長崎県","43":"熊本県","44":"大分県","45":"宮崎県","46":"鹿児島県","47":"沖縄県"};
+  const qs = (s, el=document) => el.querySelector(s);
+  const qsa = (s, el=document) => Array.from(el.querySelectorAll(s));
+  const todayISO = () => new Date().toISOString().slice(0,10);
+  const fmtYYMD = (iso) => { if(!iso) return ''; const [Y,M,D]=iso.split('-'); return `${String(Y).slice(2)}/${Number(M)}/${Number(D)}`; };
+  const loadJSON = (k, def) => { try{ return JSON.parse(localStorage.getItem(k) || JSON.stringify(def)); }catch(_){ return def; } };
+  const saveJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
-  const LS_KEY="ml47.logs";
-  const logs=JSON.parse(localStorage.getItem(LS_KEY)||"[]");
-
-  const addPref=document.getElementById("addPref");
-  addPref.innerHTML=PREFS.map(p=>`<option>${p}</option>`).join("");
-
-  function save(){ localStorage.setItem(LS_KEY,JSON.stringify(logs)); }
-
-  document.getElementById("addBtn").onclick=()=>{
-    logs.push({
-      pref:addPref.value,
-      dist:document.getElementById("addDist").value,
-      race:document.getElementById("addRace").value,
-      date:new Date().toISOString().slice(0,10)
-    });
-    save(); renderTable(); paintMap();
-  };
-
-  function renderTable(){
-    const f=document.getElementById("distanceFilter").value;
-    const body=document.getElementById("logBody");
-    body.innerHTML="";
-    logs.filter(l=>f==="ALL"||l.dist===f).forEach(l=>{
-      body.insertAdjacentHTML("beforeend",
-        `<tr><td>${l.pref}</td><td>${l.date}</td><td>${l.dist}</td><td>${l.race}</td></tr>`);
-    });
+  function migrate(){
+    let logs = loadJSON(LS_KEY, null);
+    if(logs) return logs;
+    let collected = [];
+    for(const ok of OLD_KEYS){
+      const arr = loadJSON(ok, []);
+      for(const r of arr){
+        if(!r || typeof r!=='object') continue;
+        let { pref, dateISO, date, race, dist, time } = r;
+        if(!dateISO && typeof date==='string'){
+          const m = date.match(/^(\d{2,4})[\/.-](\d{1,2})[\/.-](\d{1,2})$/);
+          if(m){ let Y=m[1]; if(Y.length===2) Y='20'+Y; const M=String(+m[2]).padStart(2,'0'); const D=String(+m[3]).padStart(2,'0'); dateISO=`${Y}-${M}-${D}`; }
+        }
+        if(!dateISO) dateISO=todayISO();
+        if(!dist) dist='フル';
+        collected.push({pref, dateISO, race: (race||''), dist, time: (time||'')});
+      }
+    }
+    saveJSON(LS_KEY, collected);
+    return collected;
   }
+  let logs = migrate();
 
-  document.getElementById("distanceFilter").onchange=renderTable;
-
-  // tabs
-  document.querySelectorAll(".tab-btn").forEach(b=>{
-    b.onclick=()=>{
-      document.querySelectorAll(".tab-btn").forEach(x=>x.classList.remove("active"));
-      document.querySelectorAll(".tab-content").forEach(x=>x.classList.remove("active"));
-      b.classList.add("active");
-      document.getElementById("tab-"+b.dataset.tab).classList.add("active");
-      if(b.dataset.tab==="logs") renderTable();
-    };
+  // Tabs
+  qsa('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      qsa('.tab-btn').forEach(b=>b.classList.remove('active'));
+      qsa('.tab-content').forEach(c=>c.classList.remove('active'));
+      btn.classList.add('active');
+      const id = btn.dataset.tab;
+      qs(`#tab-${id}`).classList.add('active');
+      if(id==='logs') refreshTable();
+    });
   });
 
-  // map
-  fetch("https://raw.githubusercontent.com/geolonia/japanese-prefectures/master/map-full.svg")
-    .then(r=>r.text()).then(t=>{
-      document.getElementById("mapWrap").innerHTML=t;
-      paintMap();
-      document.querySelectorAll("g.prefecture").forEach(g=>{
-        const name=g.querySelector("title")?.textContent;
-        g.onclick=()=>alert(name);
+  // Map
+  const MAP_URL = 'https://raw.githubusercontent.com/geolonia/japanese-prefectures/master/map-full.svg';
+  const mapWrap = qs('#mapWrap');
+  fetch(MAP_URL).then(r=>r.text()).then(svgText=>{
+    mapWrap.innerHTML = svgText;
+    const svg = qs('#mapWrap svg'); svg.style.background='#fff';
+    qsa('g.prefecture', svg).forEach(g=>{
+      const code=(g.getAttribute('data-code')||'').padStart(2,'0');
+      const name=JP_BY_CODE[code]||'';
+      if(name) g.setAttribute('id','pref-'+name);
+      qsa('path,polygon,polyline,rect,circle,ellipse', g).forEach(el=>{
+        el.classList.add('hoverable');
+        el.addEventListener('click', (ev)=>{ ev.stopPropagation(); openModal(name); });
       });
     });
+    paintLogged(svg);
+  }).catch(e=>{ qs('#loading').textContent='地図の読み込みに失敗: '+e.message; });
 
-  function paintMap(){
+  // Modal (map click)
+  const mask=qs('#modalMask'), toast=qs('#toast');
+  const prefSel=qs('#prefSelect'), dateInput=qs('#dateInput'), raceInput=qs('#raceInput'), distSel=qs('#distSelect'), timeInput=qs('#timeInput');
+  const cancelBtn=qs('#cancelBtn'), saveBtn=qs('#saveBtn'), saveAndNewBtn=qs('#saveAndNewBtn');
+  function showToast(msg='保存しました'){ toast.textContent=msg; toast.style.display='block'; setTimeout(()=>toast.style.display='none',1200); }
+  function buildPrefOptions(selected, selEl=prefSel){ selEl.innerHTML=PREFS.map(p=>`<option value="${p}">${p}</option>`).join(''); selEl.value=selected||'東京都'; }
+  function openModal(prefName){ buildPrefOptions(prefName, prefSel); dateInput.value=todayISO(); raceInput.value=''; distSel.value='フル'; timeInput.value=''; mask.style.display='flex'; mask.setAttribute('aria-hidden','false'); }
+  function closeModal(){ mask.style.display='none'; mask.setAttribute('aria-hidden','true'); }
+  cancelBtn.addEventListener('click', closeModal);
+  mask.addEventListener('click',(e)=>{ if(e.target===mask) closeModal(); });
+
+  function addRecord(rec){
+    logs.push(rec); saveJSON(LS_KEY, logs);
+    paintLogged(qs('#mapWrap svg')); refreshTable();
+  }
+
+  function saveFromModal(){
+    const rec={ pref:prefSel.value, dateISO: (dateInput.value||todayISO()), race:(raceInput.value||'').trim(), dist:distSel.value, time:(timeInput.value||'').trim() };
+    if(!rec.pref || !rec.dateISO || !rec.race || !rec.time){ alert('県・日付・大会名・タイムは必須です'); return null; }
+    addRecord(rec); return rec;
+  }
+  saveBtn.addEventListener('click', ()=>{ if(saveFromModal()){ closeModal(); showToast('保存しました'); } });
+  saveAndNewBtn.addEventListener('click', ()=>{ if(saveFromModal()){ showToast('保存して続けて追加できます'); buildPrefOptions(prefSel.value, prefSel); dateInput.value=todayISO(); raceInput.value=''; distSel.value='フル'; timeInput.value=''; } });
+
+  // Quick add bar
+  const addDist=qs('#addDist'), addPref=qs('#addPref'), addDate=qs('#addDate'), addRace=qs('#addRace'), addTime=qs('#addTime'), addBtn=qs('#addBtn');
+  buildPrefOptions('東京都', addPref);
+  addDate.value = todayISO();
+
+  function addFromBar(){
+    const rec={ pref:addPref.value, dateISO:(addDate.value||todayISO()), race:(addRace.value||'').trim(), dist:addDist.value, time:(addTime.value||'').trim() };
+    if(!rec.pref || !rec.dateISO || !rec.race || !rec.time){ alert('県・日付・大会名・タイムは必須です'); return; }
+    addRecord(rec);
+    showToast('追加しました');
+    addDate.value = todayISO();
+    addRace.value=''; addTime.value='';
+  }
+  addBtn.addEventListener('click', addFromBar);
+  [addDist, addPref, addDate, addRace, addTime].forEach(el=>{
+    el.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); addFromBar(); } });
+  });
+
+  function paintLogged(svg){
+    if(!svg) return;
+    qsa('.logged', svg).forEach(el=>el.classList.remove('logged'));
     const used=new Set(logs.map(l=>l.pref));
-    document.querySelectorAll("g.prefecture").forEach(g=>{
-      const name=g.querySelector("title")?.textContent;
-      g.classList.toggle("logged", used.has(name));
+    qsa('g.prefecture', svg).forEach(g=>{
+      const id=g.getAttribute('id')||'';
+      const name=id.replace(/^pref-/,'');
+      if(used.has(name)){
+        qsa('path,polygon,polyline,rect,circle,ellipse', g).forEach(el=>el.classList.add('logged'));
+      }
     });
   }
 
-  renderTable();
+  const tbody=qs('#logTable tbody');
+  const distanceFilter=qs('#distanceFilter');
+  const prefFilter=qs('#prefFilter');
+
+  function buildPrefFilterOptions(){
+    prefFilter.innerHTML = '<option value="ALL">全て</option>' + PREFS.map(p=>`<option value="${p}">${p}</option>`).join('');
+  }
+
+  let sortKey='date', sortAsc=false;
+
+  function refreshTable(){
+    const distVal=distanceFilter.value;
+    const prefVal=prefFilter.value;
+
+    let items=logs.slice();
+    if(distVal!=='ALL') items=items.filter(r=>r.dist===distVal);
+    if(prefVal!=='ALL') items=items.filter(r=>r.pref===prefVal);
+
+    items.sort((a,b)=>{
+      const dir=sortAsc?1:-1;
+      const aD=a.dateISO||'0000-00-00', bD=b.dateISO||'0000-00-00';
+      switch(sortKey){
+        case 'pref': return (a.pref||'').localeCompare(b.pref||'','ja')*dir;
+        case 'dist': return (a.dist||'').localeCompare(b.dist||'','ja')*dir;  // 追加
+        case 'date': return aD.localeCompare(bD)*dir;
+        case 'race': return (a.race||'').localeCompare(b.race||'','ja')*dir;
+        case 'time': return (a.time||'').localeCompare(b.time||'')*dir;
+        default: return 0;
+      }
+    });
+
+    tbody.innerHTML = items.map((r,i)=>`<tr data-index="${i}">
+      <td>${r.pref||''}</td>
+      <td>${r.dist||''}</td> <!-- 距離列を追加 -->
+      <td>${fmtYYMD(r.dateISO)}</td>
+      <td>${r.race||''}</td>
+      <td>${r.time||''}</td>
+      <td><button class="secondary" data-action="del">削除</button></td>
+    </tr>`).join('');
+  }
+
+  qsa('.sort-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const key=btn.dataset.key;
+      if(sortKey===key) sortAsc=!sortAsc; else { sortKey=key; sortAsc=false; }
+      refreshTable();
+    });
+  });
+
+  distanceFilter.addEventListener('change', refreshTable);
+  prefFilter.addEventListener('change', refreshTable);
+
+  // 削除（現在のフィルタ＆並び順に整合）
+  tbody.addEventListener('click', (e)=>{
+    const btn=e.target.closest('button[data-action="del"]'); if(!btn) return;
+    const tr=e.target.closest('tr');
+    const rowIndex=Array.from(tbody.children).indexOf(tr);
+
+    const distVal=distanceFilter.value;
+    const prefVal=prefFilter.value;
+    let view=logs.slice();
+    if(distVal!=='ALL') view=view.filter(r=>r.dist===distVal);
+    if(prefVal!=='ALL') view=view.filter(r=>r.pref===prefVal);
+    view.sort((a,b)=>{
+      const dir=sortAsc?1:-1;
+      const aD=a.dateISO||'0000-00-00', bD=b.dateISO||'0000-00-00';
+      switch(sortKey){
+        case 'pref': return (a.pref||'').localeCompare(b.pref||'','ja')*dir;
+        case 'dist': return (a.dist||'').localeCompare(b.dist||'','ja')*dir;
+        case 'date': return aD.localeCompare(bD)*dir;
+        case 'race': return (a.race||'').localeCompare(b.race||'','ja')*dir;
+        case 'time': return (a.time||'').localeCompare(b.time||'')*dir;
+        default: return 0;
+      }
+    });
+
+    const record=view[rowIndex]; if(!record) return;
+    const i=logs.findIndex(x=>JSON.stringify(x)===JSON.stringify(record));
+    if(i>=0){
+      logs.splice(i,1);
+      saveJSON(LS_KEY, logs);
+      refreshTable();
+      paintLogged(qs('#mapWrap svg'));
+    }
+  });
+
+  // 初期化
+  buildPrefOptions('東京都', qs('#addPref'));
+  buildPrefFilterOptions();
+  prefFilter.value='ALL';
+  distanceFilter.value='ALL';
+  qs('#addDate').value = todayISO();
+  refreshTable();
 })();
 </script>
 </body>
