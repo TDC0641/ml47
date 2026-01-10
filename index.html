@@ -57,6 +57,7 @@
   <div class="tabs" role="tablist">
     <button class="tab-btn active" data-tab="map" aria-selected="true">地図</button>
     <button class="tab-btn" data-tab="logs" aria-selected="false">ログ</button>
+    <button class="tab-btn" data-tab="transfer" aria-selected="false">機種変更</button>
   </div>
 
   <section id="tab-map" class="tab-content active" role="tabpanel" aria-labelledby="地図">
@@ -126,6 +127,44 @@
       </table>
     </div>
   </section>
+
+  <section id="tab-transfer" class="tab-content" role="tabpanel" aria-labelledby="機種変更">
+    <h3 style="margin:4px 0 10px;">機種変更（バックアップ／復元）</h3>
+
+    <div style="display:grid; gap:12px;">
+      <div style="border:1px solid var(--border); border-radius:12px; padding:12px;">
+        <div style="font-weight:700; margin-bottom:6px;">① 旧端末：バックアップ</div>
+        <button class="secondary" id="exportBtn">バックアップを保存（JSON）</button>
+        <p class="muted" style="margin:8px 0 0;">
+          保存された <b>ml47-backup.json</b> を、Googleドライブ／メール／LINE等で新端末に渡してください。
+        </p>
+      </div>
+
+      <div style="border:1px solid var(--border); border-radius:12px; padding:12px;">
+        <div style="font-weight:700; margin-bottom:6px;">② 新端末：復元</div>
+
+        <div class="toolbar" style="margin:0 0 8px;">
+          <label for="importMode">復元方式:</label>
+          <select id="importMode">
+            <option value="replace">上書き（おすすめ）</option>
+            <option value="merge">追記（重複は自動で除外）</option>
+          </select>
+          <div class="spacer"></div>
+        </div>
+
+        <input id="importFile" type="file" accept="application/json,.json" />
+        <div style="height:8px"></div>
+        <button class="primary" id="importBtn">このファイルで復元</button>
+        <p class="muted" id="importStatus" style="margin:8px 0 0;"></p>
+      </div>
+    </div>
+
+    <p class="muted" style="margin:10px 0 0;">
+      ※ バックアップ／復元は端末内データのため、ネット接続は不要です（地図表示はネットが必要な場合があります）。
+    </p>
+  </section>
+
+
 </div>
 
 <div class="toast" id="toast">保存しました（続けて追加できます）</div>
@@ -380,6 +419,119 @@
       paintLogged(qs('#mapWrap svg'));
     }
   });
+
+    // Transfer (backup / restore)
+  const exportBtn = qs('#exportBtn');
+  const importFile = qs('#importFile');
+  const importBtn = qs('#importBtn');
+  const importMode = qs('#importMode');
+  const importStatus = qs('#importStatus');
+
+  function downloadText(filename, text){
+    const blob = new Blob([text], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  }
+
+  function normalizeRecord(r){
+    if(!r || typeof r !== 'object') return null;
+    let pref = (r.pref || '').trim();
+    let dateISO = r.dateISO || r.date || r.date_iso || '';
+    let race = (r.race || '').trim();
+    let dist = (r.dist || 'フル').trim();
+    let time = (r.time || '').trim();
+
+    // date normalize (yy/m/d or yyyy/m/d)
+    if(typeof dateISO === 'string'){
+      const m = dateISO.match(/^(\d{2,4})[\/.-](\d{1,2})[\/.-](\d{1,2})$/);
+      if(m){
+        let Y=m[1]; if(Y.length===2) Y='20'+Y;
+        const M=String(+m[2]).padStart(2,'0');
+        const D=String(+m[3]).padStart(2,'0');
+        dateISO=`${Y}-${M}-${D}`;
+      }
+    }
+    if(typeof dateISO !== 'string' || !dateISO.match(/^\d{4}-\d{2}-\d{2}$/)) dateISO = todayISO();
+    if(!dist) dist = 'フル';
+    if(!pref) return null;
+    return { pref, dateISO, race, dist, time };
+  }
+
+  function parseBackup(text){
+    let data;
+    try{ data = JSON.parse(text); } catch(e){ throw new Error('JSONとして読み取れません'); }
+    let arr = null;
+    if(Array.isArray(data)) arr = data;
+    else if(data && Array.isArray(data.logs)) arr = data.logs;
+    else if(data && Array.isArray(data.records)) arr = data.records;
+    if(!arr) throw new Error('バックアップ形式が不正です（logs配列が見つかりません）');
+    const out = [];
+    for(const r of arr){
+      const nr = normalizeRecord(r);
+      if(nr) out.push(nr);
+    }
+    return out;
+  }
+
+  function exportBackup(){
+    const payload = {
+      app: 'ML47（マラソンログ47）',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      logs
+    };
+    downloadText('ml47-backup.json', JSON.stringify(payload, null, 2));
+    showToast('バックアップを保存しました');
+  }
+
+  async function importBackup(){
+    if(!importFile || !importFile.files || !importFile.files[0]){
+      alert('復元するJSONファイルを選んでください');
+      return;
+    }
+    const mode = (importMode && importMode.value) ? importMode.value : 'replace';
+    const file = importFile.files[0];
+    const text = await file.text();
+
+    let imported;
+    try{
+      imported = parseBackup(text);
+    }catch(e){
+      alert('復元に失敗: ' + e.message);
+      if(importStatus) importStatus.textContent = '復元に失敗: ' + e.message;
+      return;
+    }
+
+    if(mode === 'replace'){
+      if(logs.length && !confirm('現在のログを上書きします。よろしいですか？')) return;
+      logs = imported;
+    }else{
+      // merge (de-dup)
+      const key = (r)=> `${r.pref}|${r.dateISO}|${r.dist}|${r.race}|${r.time}`;
+      const set = new Set(logs.map(key));
+      for(const r of imported){
+        const k = key(r);
+        if(!set.has(k)){
+          logs.push(r);
+          set.add(k);
+        }
+      }
+    }
+    saveJSON(LS_KEY, logs);
+    paintLogged(qs('#mapWrap svg'));
+    refreshTable();
+    showToast('復元しました');
+    if(importStatus) importStatus.textContent = `復元しました（${imported.length}件）`;
+  }
+
+  if(exportBtn) exportBtn.addEventListener('click', exportBackup);
+  if(importBtn) importBtn.addEventListener('click', () => { importBackup(); });
 
   // 初期化
   buildPrefOptions('東京都', qs('#addPref'));
