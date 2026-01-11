@@ -136,7 +136,7 @@
         <div style="font-weight:700; margin-bottom:6px;">① 旧端末：バックアップ</div>
         <button class="secondary" id="exportBtn">バックアップを保存（JSON）</button>
         <p class="muted" style="margin:8px 0 0;">
-          保存された <b>ml47-backup.json</b> を、Googleドライブ／メール／LINE等で新端末に渡してください。
+          保存された <b>ml47-backup.txt</b>（中身はCSV）を、Googleドライブ／メール／LINE等で新端末に渡してください。
         </p>
       </div>
 
@@ -152,7 +152,7 @@
           <div class="spacer"></div>
         </div>
 
-        <input id="importFile" type="file" accept="application/json,.json" />
+        <input id="importFile" type="file" accept="text/plain,.txt" />
         <div style="height:8px"></div>
         <button class="primary" id="importBtn">このファイルで復元</button>
         <p class="muted" id="importStatus" style="margin:8px 0 0;"></p>
@@ -428,7 +428,7 @@
   const importStatus = qs('#importStatus');
 
   function downloadText(filename, text){
-    const blob = new Blob([text], { type: 'application/json' });
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -463,30 +463,99 @@
     return { pref, dateISO, race, dist, time };
   }
 
-  function parseBackup(text){
-    let data;
-    try{ data = JSON.parse(text); } catch(e){ throw new Error('JSONとして読み取れません'); }
-    let arr = null;
-    if(Array.isArray(data)) arr = data;
-    else if(data && Array.isArray(data.logs)) arr = data.logs;
-    else if(data && Array.isArray(data.records)) arr = data.records;
-    if(!arr) throw new Error('バックアップ形式が不正です（logs配列が見つかりません）');
+    function csvEscape(v){
+    const s = String(v ?? '');
+    if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
+    return s;
+  }
+
+  function parseCsvLine(line){
     const out = [];
-    for(const r of arr){
-      const nr = normalizeRecord(r);
+    let cur = '';
+    let i = 0;
+    let inQ = false;
+    while(i < line.length){
+      const ch = line[i];
+      if(inQ){
+        if(ch === '"'){
+          if(line[i+1] === '"'){ cur += '"'; i += 2; continue; }
+          inQ = false; i++; continue;
+        }
+        cur += ch; i++; continue;
+      }else{
+        if(ch === '"'){ inQ = true; i++; continue; }
+        if(ch === ','){ out.push(cur); cur=''; i++; continue; }
+        cur += ch; i++; continue;
+      }
+    }
+    out.push(cur);
+    return out;
+  }
+
+  function parseBackup(text){
+    // CSV想定（ヘッダー有りでも無しでもOK）
+    const lines = String(text||'')
+      .replace(/\uFEFF/g,'')      // BOM
+      .split(/\r?\n/)
+      .map(l=>l.trim())
+      .filter(l=>l.length);
+
+    if(!lines.length) throw new Error('ファイルが空です');
+
+    let header = null;
+    let start = 0;
+    const first = parseCsvLine(lines[0]).map(s=>s.trim());
+    const headerLike = first.some(x => /^(pref|県|date|日付|race|大会名|dist|距離|time|タイム)$/i.test(x));
+    if(headerLike){
+      header = first.map(x=>x.trim());
+      start = 1;
+    }else{
+      // 固定順: dist,pref,time,race,dateISO
+      header = ['dist','pref','time','race','dateISO'];
+      start = 0;
+    }
+
+    const idx = (key)=> header.findIndex(h => h === key || h.toLowerCase() === key.toLowerCase());
+
+    const iDist = idx('dist');
+    const iPref = idx('pref');
+    const iTime = idx('time');
+    const iRace = idx('race');
+    const iDate = idx('dateISO') >= 0 ? idx('dateISO') : idx('date');
+
+    const out = [];
+    for(let li=start; li<lines.length; li++){
+      const cols = parseCsvLine(lines[li]);
+      const rec = {
+        dist: (cols[iDist] ?? '').trim(),
+        pref: (cols[iPref] ?? '').trim(),
+        time: (cols[iTime] ?? '').trim(),
+        race: (cols[iRace] ?? '').trim(),
+        dateISO: (cols[iDate] ?? '').trim()
+      };
+      const nr = normalizeRecord(rec);
       if(nr) out.push(nr);
     }
     return out;
   }
 
-  function exportBackup(){
-    const payload = {
-      app: 'ML47（マラソンログ47）',
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      logs
-    };
-    downloadText('ml47-backup.json', JSON.stringify(payload, null, 2));
+    function exportBackup(){
+    // 固定順: 距離,県,タイム,大会名,日付
+    const header = ['dist','pref','time','race','dateISO'];
+    const rows = [header.join(',')];
+
+    for(const r of logs){
+      rows.push([
+        csvEscape(r.dist || ''),
+        csvEscape(r.pref || ''),
+        csvEscape(r.time || ''),
+        csvEscape(r.race || ''),
+        csvEscape(r.dateISO || '')
+      ].join(','));
+    }
+
+    const text = rows.join('\n') + '\n';
+    downloadText('ml47-backup.txt', text);
     showToast('バックアップを保存しました');
   }
 
