@@ -41,10 +41,6 @@
   .addbar button{ height:42px; }
   /* 追加：区切り線（追加の塊と表示の塊を分ける） */
   .section-sep{ border-top:1px solid var(--border); margin:8px 0 12px; }
-  /* inline edit */
-  .cell-input{ width:100%; box-sizing:border-box; padding:8px; font-size:.95rem; }
-  .cell-actions{ white-space:nowrap; }
-
   @media (max-width: 700px){
     .addbar{ grid-template-columns: 1fr 1fr; }
     .addbar .full{ grid-column: 1 / -1; }
@@ -124,7 +120,6 @@
             <th><span class="sort-btn" data-key="time">タイム ▼</span></th>
             <th><span class="sort-btn" data-key="race">大会名 ▼</span></th>
             <th><span class="sort-btn" data-key="date">日付 ▼</span></th>
-            <th>編集</th>
             <th>削除</th>
           </tr>
         </thead>
@@ -228,7 +223,6 @@
   const qsa = (s, el=document) => Array.from(el.querySelectorAll(s));
   const todayISO = () => new Date().toISOString().slice(0,10);
   const fmtYYMD = (iso) => { if(!iso) return ''; const [Y,M,D]=iso.split('-'); return `${String(Y).slice(2)}/${Number(M)}/${Number(D)}`; };
-  const escHTML = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
   const loadJSON = (k, def) => { try{ return JSON.parse(localStorage.getItem(k) || JSON.stringify(def)); }catch(_){ return def; } };
   const saveJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
@@ -254,19 +248,6 @@
     return collected;
   }
   let logs = migrate();
-  function newId(){
-    return 'l' + Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4);
-  }
-  function ensureIds(){
-    let changed = false;
-    for(const r of logs){
-      if(!r || typeof r!=='object') continue;
-      if(!r.id){ r.id = newId(); changed = true; }
-    }
-    if(changed) saveJSON(LS_KEY, logs);
-  }
-  ensureIds();
-
 
   // Tabs
   qsa('.tab-btn').forEach(btn => {
@@ -310,7 +291,6 @@
   mask.addEventListener('click',(e)=>{ if(e.target===mask) closeModal(); });
 
   function addRecord(rec){
-    if(!rec.id) rec.id = newId();
     logs.push(rec); saveJSON(LS_KEY, logs);
     paintLogged(qs('#mapWrap svg')); refreshTable();
   }
@@ -363,7 +343,6 @@
   }
 
   let sortKey='date', sortAsc=false;
-  let editingId = null;
 
   function refreshTable(){
     const distVal=distanceFilter.value;
@@ -386,104 +365,52 @@
       }
     });
 
-    tbody.innerHTML = items.map((r,i)=>{
-      const id = r.id || '';
-      const isEditing = editingId && id && (editingId === id);
-      if(isEditing){
-        return `<tr data-index="${i}" data-id="${escHTML(id)}">
-          <td><select class="cell-input" data-field="dist">
-            ${['フル','ハーフ','30K','20K','10K','5K','その他'].map(d=>`<option value="${d}" ${r.dist===d?'selected':''}>${d}</option>`).join('')}
-          </select></td>
-          <td><select class="cell-input" data-field="pref">
-            ${PREFS.map(p=>`<option value="${escHTML(p)}" ${r.pref===p?'selected':''}>${escHTML(p)}</option>`).join('')}
-          </select></td>
-          <td><input class="cell-input" data-field="time" type="text" value="${escHTML(r.time||'')}" placeholder="例：4:29:00"/></td>
-          <td><input class="cell-input" data-field="race" type="text" value="${escHTML(r.race||'')}" placeholder="マラソン大会名"/></td>
-          <td><input class="cell-input" data-field="dateISO" type="date" value="${escHTML(r.dateISO||'')}" /></td>
-          <td class="cell-actions"><button class="primary" data-action="save">編集完了</button></td>
-          <td class="cell-actions"><button class="secondary" data-action="del">削除</button></td>
-        </tr>`;
-      }
-      return `<tr data-index="${i}" data-id="${escHTML(id)}">
-        <td>${escHTML(r.dist||'')}</td>
-        <td>${escHTML(r.pref||'')}</td>
-        <td>${escHTML(r.time||'')}</td>
-        <td>${escHTML(r.race||'')}</td>
-        <td>${escHTML(fmtYYMD(r.dateISO))}</td>
-        <td class="cell-actions"><button class="secondary" data-action="edit">編集</button></td>
-        <td class="cell-actions"><button class="secondary" data-action="del">削除</button></td>
-      </tr>`;
-    }).join('');
-}
+    tbody.innerHTML = items.map((r,i)=>`<tr data-index="${i}">
+      <td>${r.dist||''}</td>
+      <td>${r.pref||''}</td>
+      <td>${r.time||''}</td>
+      <td>${r.race||''}</td>
+      <td>${fmtYYMD(r.dateISO)}</td>
+      <td><button class="secondary" data-action="del">削除</button></td>
+    </tr>`).join('');
+  }
 
   qsa('.sort-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const key=btn.dataset.key;
       if(sortKey===key) sortAsc=!sortAsc; else { sortKey=key; sortAsc=false; }
-      editingId = null;
       refreshTable();
     });
   });
 
-  distanceFilter.addEventListener('change', ()=>{ editingId=null; refreshTable(); });
-  prefFilter.addEventListener('change', ()=>{ editingId=null; refreshTable(); });
+  distanceFilter.addEventListener('change', refreshTable);
+  prefFilter.addEventListener('change', refreshTable);
 
   // 削除（現在のフィルタ＆並び順に整合）
   tbody.addEventListener('click', (e)=>{
-    const actionBtn = e.target.closest('button[data-action]');
-    if(!actionBtn) return;
-    const action = actionBtn.dataset.action;
-    const tr = actionBtn.closest('tr');
-    const id = tr?.dataset?.id || '';
-    if(!id) return;
+    const btn=e.target.closest('button[data-action="del"]'); if(!btn) return;
+    const tr=e.target.closest('tr');
+    const rowIndex=Array.from(tbody.children).indexOf(tr);
 
-    if(action === 'edit'){
-      editingId = id;
-      refreshTable();
-      return;
-    }
-
-    if(action === 'save'){
-      const dist = tr.querySelector('[data-field="dist"]')?.value || '';
-      const pref = tr.querySelector('[data-field="pref"]')?.value || '';
-      const time = tr.querySelector('[data-field="time"]')?.value || '';
-      const race = tr.querySelector('[data-field="race"]')?.value || '';
-      const dateISO = tr.querySelector('[data-field="dateISO"]')?.value || '';
-
-      if(!pref || !dateISO || !race.trim() || !time.trim()){
-        alert('県・日付・大会名・タイムは必須です');
-        return;
+    const distVal=distanceFilter.value;
+    const prefVal=prefFilter.value;
+    let view=logs.slice();
+    if(distVal!=='ALL') view=view.filter(r=>r.dist===distVal);
+    if(prefVal!=='ALL') view=view.filter(r=>r.pref===prefVal);
+    view.sort((a,b)=>{
+      const dir=sortAsc?1:-1;
+      const aD=a.dateISO||'0000-00-00', bD=b.dateISO||'0000-00-00';
+      switch(sortKey){
+        case 'pref': return (a.pref||'').localeCompare(b.pref||'','ja')*dir;
+        case 'dist': return (a.dist||'').localeCompare(b.dist||'','ja')*dir;
+        case 'date': return aD.localeCompare(bD)*dir;
+        case 'race': return (a.race||'').localeCompare(b.race||'','ja')*dir;
+        case 'time': return (a.time||'').localeCompare(b.time||'')*dir;
+        default: return 0;
       }
+    });
 
-      const idx = logs.findIndex(x => x && x.id === id);
-      if(idx >= 0){
-        const nr = normalizeRecord({ id, pref, dateISO, race, dist, time });
-        nr.id = id;
-        logs[idx] = nr;
-        saveJSON(LS_KEY, logs);
-        editingId = null;
-        refreshTable();
-        paintLogged(qs('#mapWrap svg'));
-        showToast('更新しました');
-      }
-      return;
-    }
-
-    if(action === 'del'){
-      if(!confirm('このログを削除しますか？')) return;
-      const idx = logs.findIndex(x => x && x.id === id);
-      if(idx >= 0){
-        logs.splice(idx,1);
-        saveJSON(LS_KEY, logs);
-        if(editingId === id) editingId = null;
-        refreshTable();
-        paintLogged(qs('#mapWrap svg'));
-      }
-      return;
-    }
-  });
-
-const record=view[rowIndex]; if(!record) return;
+    const record=view[rowIndex]; if(!record) return;
     const i=logs.findIndex(x=>JSON.stringify(x)===JSON.stringify(record));
     if(i>=0){
       logs.splice(i,1);
@@ -533,7 +460,7 @@ const record=view[rowIndex]; if(!record) return;
     if(typeof dateISO !== 'string' || !dateISO.match(/^\d{4}-\d{2}-\d{2}$/)) dateISO = todayISO();
     if(!dist) dist = 'フル';
     if(!pref) return null;
-    return { id: (r.id||'').trim() || null, pref, dateISO, race, dist, time };
+    return { pref, dateISO, race, dist, time };
   }
 
     function csvEscape(v){
@@ -653,7 +580,6 @@ const record=view[rowIndex]; if(!record) return;
     if(mode === 'replace'){
       if(logs.length && !confirm('現在のログを上書きします。よろしいですか？')) return;
       logs = imported;
-      for(const r of logs){ if(!r.id) r.id = newId(); }
     }else{
       // merge (de-dup)
       const key = (r)=> `${r.pref}|${r.dateISO}|${r.dist}|${r.race}|${r.time}`;
@@ -661,7 +587,6 @@ const record=view[rowIndex]; if(!record) return;
       for(const r of imported){
         const k = key(r);
         if(!set.has(k)){
-          if(!r.id) r.id = newId();
           logs.push(r);
           set.add(k);
         }
