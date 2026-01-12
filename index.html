@@ -45,6 +45,9 @@
     .addbar{ grid-template-columns: 1fr 1fr; }
     .addbar .full{ grid-column: 1 / -1; }
   }
+  /* inline edit */
+  .cell-input{ width:100%; box-sizing:border-box; padding:8px; font-size:.95rem; }
+  .cell-actions{ white-space:nowrap; }
 </style>
 </head>
 <body>
@@ -120,6 +123,7 @@
             <th><span class="sort-btn" data-key="time">タイム ▼</span></th>
             <th><span class="sort-btn" data-key="race">大会名 ▼</span></th>
             <th><span class="sort-btn" data-key="date">日付 ▼</span></th>
+            <th>編集</th>
             <th>削除</th>
           </tr>
         </thead>
@@ -223,6 +227,7 @@
   const qsa = (s, el=document) => Array.from(el.querySelectorAll(s));
   const todayISO = () => new Date().toISOString().slice(0,10);
   const fmtYYMD = (iso) => { if(!iso) return ''; const [Y,M,D]=iso.split('-'); return `${String(Y).slice(2)}/${Number(M)}/${Number(D)}`; };
+  const escHTML = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const loadJSON = (k, def) => { try{ return JSON.parse(localStorage.getItem(k) || JSON.stringify(def)); }catch(_){ return def; } };
   const saveJSON = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
@@ -257,7 +262,7 @@
       btn.classList.add('active');
       const id = btn.dataset.tab;
       qs(`#tab-${id}`).classList.add('active');
-      if(id==='logs') refreshTable();
+      if(id==='logs'){ editingIdx=null; refreshTable(); }
     });
   });
 
@@ -343,61 +348,17 @@
   }
 
   let sortKey='date', sortAsc=false;
+  let editingIdx = null;
 
   function refreshTable(){
     const distVal=distanceFilter.value;
     const prefVal=prefFilter.value;
 
-    let items=logs.slice();
+    let items=logs.map((r,idx)=> Object.assign({_idx: idx}, r));
     if(distVal!=='ALL') items=items.filter(r=>r.dist===distVal);
     if(prefVal!=='ALL') items=items.filter(r=>r.pref===prefVal);
 
     items.sort((a,b)=>{
-      const dir=sortAsc?1:-1;
-      const aD=a.dateISO||'0000-00-00', bD=b.dateISO||'0000-00-00';
-      switch(sortKey){
-        case 'pref': return (a.pref||'').localeCompare(b.pref||'','ja')*dir;
-        case 'dist': return (a.dist||'').localeCompare(b.dist||'','ja')*dir;  // 追加
-        case 'date': return aD.localeCompare(bD)*dir;
-        case 'race': return (a.race||'').localeCompare(b.race||'','ja')*dir;
-        case 'time': return (a.time||'').localeCompare(b.time||'')*dir;
-        default: return 0;
-      }
-    });
-
-    tbody.innerHTML = items.map((r,i)=>`<tr data-index="${i}">
-      <td>${r.dist||''}</td>
-      <td>${r.pref||''}</td>
-      <td>${r.time||''}</td>
-      <td>${r.race||''}</td>
-      <td>${fmtYYMD(r.dateISO)}</td>
-      <td><button class="secondary" data-action="del">削除</button></td>
-    </tr>`).join('');
-  }
-
-  qsa('.sort-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const key=btn.dataset.key;
-      if(sortKey===key) sortAsc=!sortAsc; else { sortKey=key; sortAsc=false; }
-      refreshTable();
-    });
-  });
-
-  distanceFilter.addEventListener('change', refreshTable);
-  prefFilter.addEventListener('change', refreshTable);
-
-  // 削除（現在のフィルタ＆並び順に整合）
-  tbody.addEventListener('click', (e)=>{
-    const btn=e.target.closest('button[data-action="del"]'); if(!btn) return;
-    const tr=e.target.closest('tr');
-    const rowIndex=Array.from(tbody.children).indexOf(tr);
-
-    const distVal=distanceFilter.value;
-    const prefVal=prefFilter.value;
-    let view=logs.slice();
-    if(distVal!=='ALL') view=view.filter(r=>r.dist===distVal);
-    if(prefVal!=='ALL') view=view.filter(r=>r.pref===prefVal);
-    view.sort((a,b)=>{
       const dir=sortAsc?1:-1;
       const aD=a.dateISO||'0000-00-00', bD=b.dateISO||'0000-00-00';
       switch(sortKey){
@@ -410,15 +371,101 @@
       }
     });
 
-    const record=view[rowIndex]; if(!record) return;
-    const i=logs.findIndex(x=>JSON.stringify(x)===JSON.stringify(record));
-    if(i>=0){
-      logs.splice(i,1);
+    tbody.innerHTML = items.map((r)=>{
+      const isEditing = (editingIdx === r._idx);
+      if(isEditing){
+        const distOpts = ['フル','ハーフ','30K','20K','10K','5K','その他']
+          .map(d => `<option value="${d}" ${r.dist===d?'selected':''}>${d}</option>`).join('');
+        const prefOpts = PREFS
+          .map(p => `<option value="${escHTML(p)}" ${r.pref===p?'selected':''}>${escHTML(p)}</option>`).join('');
+        return `
+<tr data-idx="${r._idx}">
+  <td><select class="cell-input" data-field="dist">${distOpts}</select></td>
+  <td><select class="cell-input" data-field="pref">${prefOpts}</select></td>
+  <td><input class="cell-input" data-field="time" type="text" value="${escHTML(r.time||'')}" placeholder="例：4:29:00"></td>
+  <td><input class="cell-input" data-field="race" type="text" value="${escHTML(r.race||'')}" placeholder="マラソン大会名"></td>
+  <td><input class="cell-input" data-field="dateISO" type="date" value="${escHTML(r.dateISO||'')}"></td>
+  <td class="cell-actions"><button class="primary" data-action="save">編集完了</button></td>
+  <td class="cell-actions"><button class="secondary" data-action="del">削除</button></td>
+</tr>`;
+      }
+      return `
+<tr data-idx="${r._idx}">
+  <td>${escHTML(r.dist||'')}</td>
+  <td>${escHTML(r.pref||'')}</td>
+  <td>${escHTML(r.time||'')}</td>
+  <td>${escHTML(r.race||'')}</td>
+  <td>${escHTML(fmtYYMD(r.dateISO))}</td>
+  <td class="cell-actions"><button class="secondary" data-action="edit">編集</button></td>
+  <td class="cell-actions"><button class="secondary" data-action="del">削除</button></td>
+</tr>`;
+    }).join('');
+  }
+
+  qsa('.sort-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const key=btn.dataset.key;
+      if(sortKey===key) sortAsc=!sortAsc; else { sortKey=key; sortAsc=false; }
+      editingIdx = null;
+      refreshTable();
+    });
+  });
+
+  distanceFilter.addEventListener('change', ()=>{ editingIdx=null; refreshTable(); });
+  prefFilter.addEventListener('change', ()=>{ editingIdx=null; refreshTable(); });
+
+  // 行編集／削除
+  tbody.addEventListener('click', (e)=>{
+    const btn = e.target.closest('button[data-action]');
+    if(!btn) return;
+    const action = btn.dataset.action;
+    const tr = btn.closest('tr');
+    const idx = tr ? Number(tr.dataset.idx) : NaN;
+    if(Number.isNaN(idx)) return;
+
+    if(action === 'edit'){
+      editingIdx = idx;
+      refreshTable();
+      return;
+    }
+
+    if(action === 'save'){
+      const dist = tr.querySelector('[data-field="dist"]')?.value || '';
+      const pref = tr.querySelector('[data-field="pref"]')?.value || '';
+      const time = tr.querySelector('[data-field="time"]')?.value || '';
+      const race = tr.querySelector('[data-field="race"]')?.value || '';
+      const dateISO = tr.querySelector('[data-field="dateISO"]')?.value || '';
+
+      if(!pref || !dateISO || !race.trim() || !time.trim()){
+        alert('県・日付・大会名・タイムは必須です');
+        return;
+      }
+
+      const nr = normalizeRecord({ pref, dateISO, race, dist, time });
+      logs[idx] = nr;
       saveJSON(LS_KEY, logs);
+
+      editingIdx = null;
       refreshTable();
       paintLogged(qs('#mapWrap svg'));
+      showToast('更新しました');
+      return;
+    }
+
+    if(action === 'del'){
+      if(!confirm('このログを削除しますか？')) return;
+      logs.splice(idx, 1);
+      saveJSON(LS_KEY, logs);
+
+      if(editingIdx === idx) editingIdx = null;
+      else if(editingIdx !== null && idx < editingIdx) editingIdx -= 1;
+
+      refreshTable();
+      paintLogged(qs('#mapWrap svg'));
+      return;
     }
   });
+
 
     // Transfer (backup / restore)
   const exportBtn = qs('#exportBtn');
